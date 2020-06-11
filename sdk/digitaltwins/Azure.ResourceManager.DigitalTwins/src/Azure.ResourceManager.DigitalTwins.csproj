@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.0.0-preview.1</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- NuGet props -->
+    <PackageId>Azure.ResourceManager.DigitalTwins</PackageId>
+    <Description>Azure management client SDK for Azure resource provider Microsoft.DigitalTwins</Description>
+    <PackageTags>azure;management;digitaltwins</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\core\Azure.Core\src\Azure.Core.csproj" />
+  </ItemGroup>
+</Project>
