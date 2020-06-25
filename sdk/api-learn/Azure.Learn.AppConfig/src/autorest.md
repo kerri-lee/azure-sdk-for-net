@@ -4,5 +4,5 @@ Run `dotnet msbuild /t:GenerateCode` to generate code.
 
 ``` yaml
 input-file:
-    -  $(this-folder)/swagger/https://github.com/Azure/azure-rest-api-specs/blob/501d287ad7be70b76c8b56b07173a245be248291/specification/azsdk-api-learn/data-plane/AppConfiguration/preview/1.0/mini-appconfig.json
+    -  https://github.com/Azure/azure-rest-api-specs/blob/501d287ad7be70b76c8b56b07173a245be248291/specification/azsdk-api-learn/data-plane/AppConfiguration/preview/1.0/mini-appconfig.json
 ```
