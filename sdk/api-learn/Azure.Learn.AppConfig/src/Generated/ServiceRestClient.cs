@@ -21,7 +21,7 @@ namespace Azure.Learn.AppConfig
         private string endpoint;
         private string apiVersion;
         private ClientDiagnostics _clientDiagnostics;
-        private HttpPipeline _pipeline; // used to send and receive messages from the service
+        private HttpPipeline _pipeline;
 
         /// <summary> Initializes a new instance of ServiceRestClient. </summary>
         /// <param name="clientDiagnostics"> The handler for diagnostic messaging in the client. </param>
@@ -63,7 +63,7 @@ namespace Azure.Learn.AppConfig
         /// <summary> Gets a single key-value. </summary>
         /// <param name="key"> The key of the key-value to retrieve. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public async Task<Response<KeyValue>> GetKeyValueAsync(string key, CancellationToken cancellationToken = default)
+        public async Task<Response<ConfigurationSetting>> GetKeyValueAsync(string key, CancellationToken cancellationToken = default)
         {
             if (key == null)
             {
@@ -76,7 +76,7 @@ namespace Azure.Learn.AppConfig
             {
                 case 200:
                     {
-                        KeyValue value = default;
+                        ConfigurationSetting value = default;
                         using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
                         if (document.RootElement.ValueKind == JsonValueKind.Null)
                         {
@@ -84,7 +84,7 @@ namespace Azure.Learn.AppConfig
                         }
                         else
                         {
-                            value = KeyValue.DeserializeKeyValue(document.RootElement);
+                            value = ConfigurationSetting.DeserializeConfigurationSetting(document.RootElement);
                         }
                         return Response.FromValue(value, message.Response);
                     }
@@ -96,7 +96,7 @@ namespace Azure.Learn.AppConfig
         /// <summary> Gets a single key-value. </summary>
         /// <param name="key"> The key of the key-value to retrieve. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public Response<KeyValue> GetKeyValue(string key, CancellationToken cancellationToken = default)
+        public Response<ConfigurationSetting> GetKeyValue(string key, CancellationToken cancellationToken = default)
         {
             if (key == null)
             {
@@ -109,7 +109,7 @@ namespace Azure.Learn.AppConfig
             {
                 case 200:
                     {
-                        KeyValue value = default;
+                        ConfigurationSetting value = default;
                         using var document = JsonDocument.Parse(message.Response.ContentStream);
                         if (document.RootElement.ValueKind == JsonValueKind.Null)
                         {
@@ -117,7 +117,7 @@ namespace Azure.Learn.AppConfig
                         }
                         else
                         {
-                            value = KeyValue.DeserializeKeyValue(document.RootElement);
+                            value = ConfigurationSetting.DeserializeConfigurationSetting(document.RootElement);
                         }
                         return Response.FromValue(value, message.Response);
                     }

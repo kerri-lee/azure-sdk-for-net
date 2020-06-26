@@ -11,9 +11,9 @@ using Azure.Core;
 
 namespace Azure.Learn.AppConfig.Models
 {
-    public partial class KeyValue
+    public partial class ConfigurationSetting
     {
-        internal static KeyValue DeserializeKeyValue(JsonElement element)
+        internal static ConfigurationSetting DeserializeConfigurationSetting(JsonElement element)
         {
             string key = default;
             string contentType = default;
@@ -58,7 +58,7 @@ namespace Azure.Learn.AppConfig.Models
                     continue;
                 }
             }
-            return new KeyValue(key, contentType, value, lastModified);
+            return new ConfigurationSetting(key, contentType, value, lastModified);
         }
     }
 }
