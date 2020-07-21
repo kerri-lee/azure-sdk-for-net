@@ -15,8 +15,11 @@ namespace Azure.Messaging.EventGrid.Models
         /// <summary>
         /// Initializes a new instance of the <see cref="EventGridEvent"/> class.
         /// </summary>
-        public EventGridEvent() { }
+        public EventGridEvent()
+        {
 
+        }
+        
         /// <summary> Initializes a new instance of EventGridEvent. </summary>
         /// <param name="id"> An unique identifier for the event. </param>
         /// <param name="subject"> A resource path relative to the topic path. </param>

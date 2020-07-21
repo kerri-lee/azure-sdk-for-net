@@ -27,89 +27,89 @@ namespace Azure.Messaging.EventGrid.Tests
         public async Task CanPublishEvent()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.TopicHost),
                     new AzureKeyCredential(TestEnvironment.TopicKey),
                     options));
-            await client.PublishEventsAsync(GetEventsList());
+            await client.SendAsync(GetEventsList());
         }
 
         [Test]
         public async Task CanPublishEventWithCustomObjectPayload()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.TopicHost),
                     new AzureKeyCredential(TestEnvironment.TopicKey),
                     options));
-            await client.PublishEventsAsync(GetEventsListWithCustomPayload());
+            await client.SendAsync(GetEventsListWithCustomPayload());
         }
 
         [Test]
         public async Task CanPublishEventToDomain()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.DomainHost),
                     new AzureKeyCredential(TestEnvironment.DomainKey),
                     options));
-            await client.PublishEventsAsync(GetEventsWithTopicsList());
+            await client.SendAsync(GetEventsWithTopicsList());
         }
 
         [Test]
         public async Task CanPublishCloudEvent()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CloudEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
                     options));
-            await client.PublishCloudEventsAsync(GetCloudEventsList());
+            await client.SendAsync(GetCloudEventsList());
         }
 
         [Test]
         public async Task CanPublishCloudEventWithCustomObjectPayload()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CloudEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
                     options));
-            await client.PublishCloudEventsAsync(GetCloudEventsListWithCustomPayload());
+            await client.SendAsync(GetCloudEventsListWithCustomPayload());
         }
 
         [Test]
         public async Task CanPublishCustomEvent()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CustomEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
                     options));
-            await client.PublishCustomEventsAsync(GetCustomEventsList());
+            await client.SendAsync(GetCustomEventsList());
         }
 
         [Test]
         public async Task CanPublishEventUsingSAS()
         {
-            EventGridClient client = new EventGridClient(
+            EventGridPublisherClient client = new EventGridPublisherClient(
                 new Uri(TestEnvironment.TopicHost),
                 new AzureKeyCredential(TestEnvironment.TopicKey));
 
             string sasToken = client.BuildSharedAccessSignature(DateTimeOffset.UtcNow.AddMinutes(60));
 
-            EventGridClient sasTokenClient = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient sasTokenClient = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.TopicHost),
                     new SharedAccessSignatureCredential(sasToken),
                     Recording.InstrumentClientOptions(new EventGridClientOptions())));
-            await sasTokenClient.PublishEventsAsync(GetEventsList());
+            await sasTokenClient.SendAsync(GetEventsList());
         }
 
         [Test]
@@ -122,12 +122,12 @@ namespace Azure.Messaging.EventGrid.Tests
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
 
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CustomEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
                     options));
-            await client.PublishCustomEventsAsync(GetCustomEventsList());
+            await client.SendAsync(GetCustomEventsList());
         }
 
         private IList<EventGridEvent> GetEventsList()
@@ -148,6 +148,7 @@ namespace Azure.Messaging.EventGrid.Tests
 
             return eventsList;
         }
+
         private IList<EventGridEvent> GetEventsListWithCustomPayload()
         {
             List<EventGridEvent> eventsList = new List<EventGridEvent>();

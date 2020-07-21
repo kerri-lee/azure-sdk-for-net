@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
+using Azure.Core.Pipeline;
 using Azure.Messaging.EventGrid.Models;
 
 namespace Azure.Messaging.EventGrid
@@ -18,7 +20,14 @@ namespace Azure.Messaging.EventGrid
     /// </summary>
     public class EventGridConsumer
     {
-        private readonly ObjectSerializer _objectSerializer;
+        /// <summary>
+        /// object serializer
+        /// </summary>
+        public ObjectSerializer ObjectSerializer { get; set; } = new JsonObjectSerializer(new JsonSerializerOptions()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            AllowTrailingCommas = true
+        });
         private readonly ConcurrentDictionary<string, Type> _customEventTypeMappings;
 
         /// <summary>
@@ -28,10 +37,6 @@ namespace Azure.Messaging.EventGrid
         {
             // Initialize some sort of dictionary for custom event types
             _customEventTypeMappings = new ConcurrentDictionary<string, Type>();
-            _objectSerializer = new JsonObjectSerializer(new JsonSerializerOptions()
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
         }
 
         /// <summary>
@@ -42,12 +47,8 @@ namespace Azure.Messaging.EventGrid
         /// </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of EventGrid Events.</returns>
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public virtual async Task<EventGridEvent[]> DeserializeEventGridEventsAsync(string requestContent, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            throw new NotImplementedException();
-        }
+            => await DeserializeEventGridEventsInternal(requestContent, true, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Deserializes JSON encoded events and returns an array of events encoded in the EventGrid event schema.
@@ -58,10 +59,56 @@ namespace Azure.Messaging.EventGrid
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of EventGrid Events.</returns>
         public virtual EventGridEvent[] DeserializeEventGridEvents(string requestContent, CancellationToken cancellationToken = default)
+            => DeserializeEventGridEventsInternal(requestContent, false, cancellationToken).EnsureCompleted();
+
+        internal async Task<EventGridEvent[]> DeserializeEventGridEventsInternal(string requestContent, bool async, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
-            // use _objectSerializer to deserialize into list of eg events
             // need to check if events are actually encoded in the eg schema
+
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
+
+            // note: need parameterless constructor generated
+            EventGridEvent[] egEvents = (EventGridEvent[])ObjectSerializer.Deserialize(stream, typeof(EventGridEvent[]), cancellationToken);
+
+            foreach (EventGridEvent egEvent in egEvents)
+            {
+
+                // First, let's attempt to find the mapping for the deserialization function in the system event type mapping.
+                if (SystemEventTypeMappings.SystemEventDeserializers.TryGetValue(egEvent.EventType, out Func<JsonElement, object> systemDeserializationFunction))
+                {
+                    if (egEvent.Data != null)
+                    {
+                        string eventDataContent = egEvent.Data.ToString();
+                        JsonDocument document;
+                        if (async)
+                        {
+                            document = await JsonDocument.ParseAsync(new MemoryStream(Encoding.UTF8.GetBytes(eventDataContent)), default, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            document = JsonDocument.Parse(new MemoryStream(Encoding.UTF8.GetBytes(eventDataContent)), default);
+                        }
+
+                        egEvent.Data = systemDeserializationFunction(document.RootElement); // note: still need to generate setters for event grid event
+                    }
+                }
+                // If not a system event, let's attempt to find the mapping for the event type in the custom event mapping.
+                else if (TryGetCustomEventMapping(egEvent.EventType, out Type typeOfEventData))
+                {
+                        // doesn't work with primitive types/strings
+                        MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(egEvent.Data.ToString()));
+                        if (async)
+                        {
+                            egEvent.Data = await ObjectSerializer.DeserializeAsync(dataStream, typeOfEventData, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
+                        }
+                }
+            }
+
+            return egEvents;
         }
 
         /// <summary>
@@ -100,17 +147,10 @@ namespace Azure.Messaging.EventGrid
         /// <param name="requestContent">
         /// The JSON encoded representation of either a single event or an array or events, encoded in a custom event schema.
         /// </param>
-        /// <param name="customEventType">
-        /// Custom event type that <paramref name="requestContent"/> will be decoded into.
-        /// </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of custom events.</returns>
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        public virtual async Task<object[]> DeserializeCustomEventsAsync(string requestContent, Type customEventType, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            throw new NotImplementedException();
-        }
+        public virtual async Task<T[]> DeserializeCustomEventsAsync<T>(string requestContent, CancellationToken cancellationToken = default)
+            => await DeserializeCustomEventsInternal<T>(requestContent, true, cancellationToken).ConfigureAwait(false);
 
         /// <summary>
         /// Deserializes JSON encoded events and returns an array of events encoded in a custom event schema.
@@ -118,16 +158,23 @@ namespace Azure.Messaging.EventGrid
         /// <param name="requestContent">
         /// The JSON encoded representation of either a single event or an array or events, encoded in a custom event schema.
         /// </param>
-        /// <param name="customEventType">
-        /// Custom event type that <paramref name="requestContent"/> will be decoded into.
-        /// </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of CloudEvents.</returns>
-        public virtual object[] DeserializeCustomEvents(string requestContent, Type customEventType, CancellationToken cancellationToken = default)
+        public virtual T[] DeserializeCustomEvents<T>(string requestContent, CancellationToken cancellationToken = default)
+            => DeserializeCustomEventsInternal<T>(requestContent, false, cancellationToken).EnsureCompleted();
+
+        internal async Task<T[]> DeserializeCustomEventsInternal<T>(string requestContent, bool async, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
-            // use _objectSerializer to deserialize into list of custom events
-            // need to check if events are actually encoded in the custom event schema
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
+
+            if (async)
+            {
+                return (T[])await ObjectSerializer.DeserializeAsync(stream, typeof(T[]), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                return (T[])ObjectSerializer.Deserialize(stream, typeof(T[]), cancellationToken);
+            }
         }
 
         /// <summary>
@@ -187,7 +234,7 @@ namespace Azure.Messaging.EventGrid
             return _customEventTypeMappings.TryRemove(eventType, out eventDataType);
         }
 
-        internal void ValidateEventType(string eventType)
+        internal static void ValidateEventType(string eventType)
         {
             if (string.IsNullOrEmpty(eventType))
             {

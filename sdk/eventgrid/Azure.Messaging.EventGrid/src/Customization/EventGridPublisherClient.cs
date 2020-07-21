@@ -18,7 +18,7 @@ namespace Azure.Messaging.EventGrid
     /// <summary>
     /// Client used to interact with the Event Grid service
     /// </summary>
-    public class EventGridClient
+    public class EventGridPublisherClient
     {
         private readonly ServiceRestClient _serviceRestClient;
         private readonly ClientDiagnostics _clientDiagnostics;
@@ -29,14 +29,14 @@ namespace Azure.Messaging.EventGrid
         private ObjectSerializer _serializer;
 
         /// <summary>Initalizes an instance of EventGridClient</summary>
-        protected EventGridClient()
+        protected EventGridPublisherClient()
         {
         }
 
         /// <summary>Initalizes an instance of EventGridClient</summary>
         /// <param name="endpoint">Topic endpoint</param>
         /// <param name="credential">Credential used to connect to Azure</param>
-        public EventGridClient(Uri endpoint, AzureKeyCredential credential)
+        public EventGridPublisherClient(Uri endpoint, AzureKeyCredential credential)
             : this(endpoint, credential, new EventGridClientOptions())
         {
         }
@@ -44,16 +44,16 @@ namespace Azure.Messaging.EventGrid
         /// <summary>Initalizes an instance of EventGridClient</summary>
         /// <param name="endpoint">Topic endpoint</param>
         /// <param name="credential">Credential used to connect to Azure</param>
-        public EventGridClient(Uri endpoint, SharedAccessSignatureCredential credential)
+        public EventGridPublisherClient(Uri endpoint, SharedAccessSignatureCredential credential)
             : this(endpoint, credential, new EventGridClientOptions())
         {
         }
 
-        /// <summary>Initalizes an instance of the<see cref="EventGridClient"/> class</summary>
+        /// <summary>Initalizes an instance of the<see cref="EventGridPublisherClient"/> class</summary>
         /// <param name="endpoint">Topic endpoint</param>
         /// <param name="credential">Credential used to connect to Azure</param>
         /// <param name="options">Configuring options</param>
-        public EventGridClient(Uri endpoint, AzureKeyCredential credential, EventGridClientOptions options)
+        public EventGridPublisherClient(Uri endpoint, AzureKeyCredential credential, EventGridClientOptions options)
         {
             Argument.AssertNotNull(credential, nameof(credential));
             options ??= new EventGridClientOptions();
@@ -67,12 +67,12 @@ namespace Azure.Messaging.EventGrid
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EventGridClient"/> class.
+        /// Initializes a new instance of the <see cref="EventGridPublisherClient"/> class.
         /// </summary>
         /// <param name="endpoint">Topic endpoint</param>
         /// <param name="credential">Credential used to connect to Azure</param>
         /// <param name="options">Configuring options</param>
-        public EventGridClient(Uri endpoint, SharedAccessSignatureCredential credential, EventGridClientOptions options)
+        public EventGridPublisherClient(Uri endpoint, SharedAccessSignatureCredential credential, EventGridClientOptions options)
         {
             Argument.AssertNotNull(credential, nameof(credential));
             options ??= new EventGridClientOptions();
@@ -86,29 +86,35 @@ namespace Azure.Messaging.EventGrid
         /// <summary> Publishes a batch of EventGridEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public virtual async Task<Response> PublishEventsAsync(IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
-            => await PublishEventsInternal(events, true /*async*/, cancellationToken).ConfigureAwait(false);
+        public virtual async Task<Response> SendAsync(IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
+            => await SendEventsInternal(events, true /*async*/, cancellationToken).ConfigureAwait(false);
 
         /// <summary> Publishes a batch of EventGridEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public virtual Response PublishEvents(IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
-            => PublishEventsInternal(events, false /*async*/, cancellationToken).EnsureCompleted();
+        public virtual Response Send(IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
+            => SendEventsInternal(events, false /*async*/, cancellationToken).EnsureCompleted();
 
         /// <summary> Publishes a batch of EventGridEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="async">Whether to invoke the operation asynchronously</param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        private async Task<Response> PublishEventsInternal(IEnumerable<EventGridEvent> events, bool async, CancellationToken cancellationToken = default)
+        private async Task<Response> SendEventsInternal(IEnumerable<EventGridEvent> events, bool async, CancellationToken cancellationToken = default)
         {
-            using DiagnosticScope scope = _clientDiagnostics.CreateScope($"{nameof(EventGridClient)}.{nameof(PublishEvents)}");
+            using DiagnosticScope scope = _clientDiagnostics.CreateScope($"{nameof(EventGridPublisherClient)}.{nameof(Send)}");
             scope.Start();
 
             try
             {
+                // List of events cannot be null
+                Argument.AssertNotNull(events, nameof(events));
+
                 List<EventGridEvent> eventsWithSerializedPayloads = new List<EventGridEvent>();
                 foreach (EventGridEvent egEvent in events)
                 {
+                    // Events cannot be null
+                    Argument.AssertNotNull(egEvent, "Event Grid Event");
+
                     EventGridEvent newEGEvent = new EventGridEvent(
                             egEvent.Id,
                             egEvent.Subject,
@@ -149,29 +155,35 @@ namespace Azure.Messaging.EventGrid
         /// <summary> Publishes a batch of CloudEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public virtual async Task<Response> PublishCloudEventsAsync(IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
-            => await PublishCloudEventsInternal(events, true /*async*/, cancellationToken).ConfigureAwait(false);
+        public virtual async Task<Response> SendAsync(IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+            => await SendCloudEventsInternal(events, true /*async*/, cancellationToken).ConfigureAwait(false);
 
         /// <summary> Publishes a batch of CloudEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public virtual Response PublishCloudEvents(IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
-            => PublishCloudEventsInternal(events, false /*async*/, cancellationToken).EnsureCompleted();
+        public virtual Response Send(IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+            => SendCloudEventsInternal(events, false /*async*/, cancellationToken).EnsureCompleted();
 
         /// <summary> Publishes a batch of CloudEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="async">Whether to invoke the operation asynchronously</param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        private async Task<Response> PublishCloudEventsInternal(IEnumerable<CloudEvent> events, bool async, CancellationToken cancellationToken = default)
+        private async Task<Response> SendCloudEventsInternal(IEnumerable<CloudEvent> events, bool async, CancellationToken cancellationToken = default)
         {
-            using DiagnosticScope scope = _clientDiagnostics.CreateScope($"{nameof(EventGridClient)}.{nameof(PublishCloudEvents)}");
+            using DiagnosticScope scope = _clientDiagnostics.CreateScope($"{nameof(EventGridPublisherClient)}.{nameof(Send)}");
             scope.Start();
 
             try
             {
+                // List of events cannot be null
+                Argument.AssertNotNull(events, nameof(events));
+
                 List<CloudEvent> eventsWithSerializedPayloads = new List<CloudEvent>();
                 foreach (CloudEvent cloudEvent in events)
                 {
+                    // Events cannot be null
+                    Argument.AssertNotNull(cloudEvent, "Cloud Event");
+
                     // The 'Data' field is optional for the CloudEvent spec
                     if (cloudEvent.Data != null)
                     {
@@ -179,16 +191,18 @@ namespace Azure.Messaging.EventGrid
                             new CloudEvent(
                                 cloudEvent.Id,
                                 cloudEvent.Source,
-                                new EventGridSerializer(
+                                cloudEvent.Type,
+                                cloudEvent.Specversion)
+                            {
+                                Data = new EventGridSerializer(
                                     cloudEvent.Data,
                                     _serializer,
                                     cancellationToken),
-                                cloudEvent.Type,
-                                cloudEvent.Time,
-                                cloudEvent.Specversion,
-                                cloudEvent.Dataschema,
-                                cloudEvent.Datacontenttype,
-                                cloudEvent.Subject));
+                                Time = cloudEvent.Time,
+                                Datacontenttype = cloudEvent.Datacontenttype,
+                                Dataschema = cloudEvent.Dataschema,
+                                Subject = cloudEvent.Subject
+                            });
                     }
                     else
                     {
@@ -221,25 +235,31 @@ namespace Azure.Messaging.EventGrid
         /// <summary> Publishes a batch of custom events to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public virtual async Task<Response> PublishCustomEventsAsync(IEnumerable<object> events, CancellationToken cancellationToken = default)
-            => await PublishCustomEventsInternal(events, true /*async*/, cancellationToken).ConfigureAwait(false);
+        public virtual async Task<Response> SendAsync(IEnumerable<object> events, CancellationToken cancellationToken = default)
+            => await SendCustomEventsInternal(events, true /*async*/, cancellationToken).ConfigureAwait(false);
 
         /// <summary> Publishes a batch of custom events to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public virtual Response PublishCustomEvents(IEnumerable<object> events, CancellationToken cancellationToken = default)
-            => PublishCustomEventsInternal(events, false /*async*/, cancellationToken).EnsureCompleted();
+        public virtual Response Send(IEnumerable<object> events, CancellationToken cancellationToken = default)
+            => SendCustomEventsInternal(events, false /*async*/, cancellationToken).EnsureCompleted();
 
-        private async Task<Response> PublishCustomEventsInternal(IEnumerable<object> events, bool async, CancellationToken cancellationToken = default)
+        private async Task<Response> SendCustomEventsInternal(IEnumerable<object> events, bool async, CancellationToken cancellationToken = default)
         {
-            using DiagnosticScope scope = _clientDiagnostics.CreateScope($"{nameof(EventGridClient)}.{nameof(PublishCustomEvents)}");
+            using DiagnosticScope scope = _clientDiagnostics.CreateScope($"{nameof(EventGridPublisherClient)}.{nameof(Send)}");
             scope.Start();
 
             try
             {
+                // List of events cannot be null
+                Argument.AssertNotNull(events, nameof(events));
+
                 List<EventGridSerializer> serializedEvents = new List<EventGridSerializer>();
                 foreach (object customEvent in events)
                 {
+                    // Events cannot be null
+                    Argument.AssertNotNull(customEvent, "Custom Event");
+
                     serializedEvents.Add(
                         new EventGridSerializer(
                             customEvent,
