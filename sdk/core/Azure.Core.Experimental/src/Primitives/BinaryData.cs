@@ -37,6 +37,11 @@ namespace Azure.Core
         private static readonly UTF8Encoding s_encoding = new UTF8Encoding(false);
 
         /// <summary>
+        ///
+        /// </summary>
+        public bool IsSerialized { get; }
+
+        /// <summary>
         /// The backing store for the <see cref="BinaryData"/> instance.
         /// </summary>
         public ReadOnlyMemory<byte> Bytes { get; }
@@ -49,6 +54,7 @@ namespace Azure.Core
         public BinaryData(ReadOnlySpan<byte> data)
         {
             Bytes = data.ToArray();
+            IsSerialized = false;
         }
 
         /// <summary>
@@ -56,9 +62,11 @@ namespace Azure.Core
         /// passed in bytes.
         /// </summary>
         /// <param name="data">Byte data.</param>
-        private BinaryData(ReadOnlyMemory<byte> data)
+        /// <param name="isJson"></param>
+        private BinaryData(ReadOnlyMemory<byte> data, bool isJson = false)
         {
             Bytes = data;
+            this.IsSerialized = isJson;
         }
         /// <summary>
         /// Creates a binary data instance from a string by converting
@@ -70,6 +78,7 @@ namespace Azure.Core
         public BinaryData(string data)
         {
             Bytes = s_encoding.GetBytes(data);
+            IsSerialized = false;
         }
 
         /// <summary>
@@ -192,6 +201,7 @@ namespace Azure.Core
             CancellationToken cancellationToken)
         {
             Argument.AssertNotNull(serializer, nameof(serializer));
+
             using var memoryStream = new MemoryStream();
             if (async)
             {
@@ -201,7 +211,9 @@ namespace Azure.Core
             {
                 serializer.Serialize(memoryStream, data, typeof(T), cancellationToken);
             }
-            return new BinaryData((ReadOnlyMemory<byte>) memoryStream.ToArray());
+            var binary = new BinaryData((ReadOnlyMemory<byte>) memoryStream.ToArray(), true);
+
+            return binary;
         }
 
         /// <summary>

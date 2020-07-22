@@ -40,231 +40,6 @@ namespace Azure.Messaging.EventGrid
             _pipeline = pipeline;
         }
 
-        internal HttpMessage CreatePublishEventsRequest(string topicHostname, IEnumerable<EventGridEvent> events)
-        {
-            var message = _pipeline.CreateMessage();
-            var request = message.Request;
-            request.Method = RequestMethod.Post;
-            var uri = new RawRequestUriBuilder();
-            uri.AppendRaw("https://", false);
-            uri.AppendRaw(topicHostname, false);
-            uri.AppendPath("/api/events", false);
-            uri.AppendQuery("api-version", apiVersion, true);
-            request.Uri = uri;
-            request.Headers.Add("Content-Type", "application/json");
-            var content = new Utf8JsonRequestContent();
-            content.JsonWriter.WriteStartArray();
-            foreach (var item in events)
-            {
-                content.JsonWriter.WriteObjectValue(item);
-            }
-            content.JsonWriter.WriteEndArray();
-            request.Content = content;
-            return message;
-        }
-
-        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
-        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
-        /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public async Task<Response> PublishEventsAsync(string topicHostname, IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
-        {
-            if (topicHostname == null)
-            {
-                throw new ArgumentNullException(nameof(topicHostname));
-            }
-            if (events == null)
-            {
-                throw new ArgumentNullException(nameof(events));
-            }
-
-            using var message = CreatePublishEventsRequest(topicHostname, events);
-            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            switch (message.Response.Status)
-            {
-                case 200:
-                    return message.Response;
-                default:
-                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
-        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
-        /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public Response PublishEvents(string topicHostname, IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
-        {
-            if (topicHostname == null)
-            {
-                throw new ArgumentNullException(nameof(topicHostname));
-            }
-            if (events == null)
-            {
-                throw new ArgumentNullException(nameof(events));
-            }
-
-            using var message = CreatePublishEventsRequest(topicHostname, events);
-            _pipeline.Send(message, cancellationToken);
-            switch (message.Response.Status)
-            {
-                case 200:
-                    return message.Response;
-                default:
-                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
-            }
-        }
-
-        internal HttpMessage CreatePublishCloudEventEventsRequest(string topicHostname, IEnumerable<CloudEvent> events)
-        {
-            var message = _pipeline.CreateMessage();
-            var request = message.Request;
-            request.Method = RequestMethod.Post;
-            var uri = new RawRequestUriBuilder();
-            uri.AppendRaw("https://", false);
-            uri.AppendRaw(topicHostname, false);
-            uri.AppendPath("/api/events", false);
-            uri.AppendQuery("api-version", apiVersion, true);
-            request.Uri = uri;
-            request.Headers.Add("Content-Type", "application/cloudevents-batch+json; charset=utf-8");
-            var content = new Utf8JsonRequestContent();
-            content.JsonWriter.WriteStartArray();
-            foreach (var item in events)
-            {
-                content.JsonWriter.WriteObjectValue(item);
-            }
-            content.JsonWriter.WriteEndArray();
-            request.Content = content;
-            return message;
-        }
-
-        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
-        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
-        /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public async Task<Response> PublishCloudEventEventsAsync(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
-        {
-            if (topicHostname == null)
-            {
-                throw new ArgumentNullException(nameof(topicHostname));
-            }
-            if (events == null)
-            {
-                throw new ArgumentNullException(nameof(events));
-            }
-
-            using var message = CreatePublishCloudEventEventsRequest(topicHostname, events);
-            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            switch (message.Response.Status)
-            {
-                case 200:
-                    return message.Response;
-                default:
-                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
-        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
-        /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public Response PublishCloudEventEvents(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
-        {
-            if (topicHostname == null)
-            {
-                throw new ArgumentNullException(nameof(topicHostname));
-            }
-            if (events == null)
-            {
-                throw new ArgumentNullException(nameof(events));
-            }
-
-            using var message = CreatePublishCloudEventEventsRequest(topicHostname, events);
-            _pipeline.Send(message, cancellationToken);
-            switch (message.Response.Status)
-            {
-                case 200:
-                    return message.Response;
-                default:
-                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
-            }
-        }
-
-        internal HttpMessage CreatePublishCustomEventEventsRequest(string topicHostname, IEnumerable<object> events)
-        {
-            var message = _pipeline.CreateMessage();
-            var request = message.Request;
-            request.Method = RequestMethod.Post;
-            var uri = new RawRequestUriBuilder();
-            uri.AppendRaw("https://", false);
-            uri.AppendRaw(topicHostname, false);
-            uri.AppendPath("/api/events", false);
-            uri.AppendQuery("api-version", apiVersion, true);
-            request.Uri = uri;
-            request.Headers.Add("Content-Type", "application/json");
-            var content = new Utf8JsonRequestContent();
-            content.JsonWriter.WriteStartArray();
-            foreach (var item in events)
-            {
-                content.JsonWriter.WriteObjectValue(item);
-            }
-            content.JsonWriter.WriteEndArray();
-            request.Content = content;
-            return message;
-        }
-
-        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
-        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
-        /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public async Task<Response> PublishCustomEventEventsAsync(string topicHostname, IEnumerable<object> events, CancellationToken cancellationToken = default)
-        {
-            if (topicHostname == null)
-            {
-                throw new ArgumentNullException(nameof(topicHostname));
-            }
-            if (events == null)
-            {
-                throw new ArgumentNullException(nameof(events));
-            }
-
-            using var message = CreatePublishCustomEventEventsRequest(topicHostname, events);
-            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            switch (message.Response.Status)
-            {
-                case 200:
-                    return message.Response;
-                default:
-                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
-        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
-        /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public Response PublishCustomEventEvents(string topicHostname, IEnumerable<object> events, CancellationToken cancellationToken = default)
-        {
-            if (topicHostname == null)
-            {
-                throw new ArgumentNullException(nameof(topicHostname));
-            }
-            if (events == null)
-            {
-                throw new ArgumentNullException(nameof(events));
-            }
-
-            using var message = CreatePublishCustomEventEventsRequest(topicHostname, events);
-            _pipeline.Send(message, cancellationToken);
-            switch (message.Response.Status)
-            {
-                case 200:
-                    return message.Response;
-                default:
-                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
-            }
-        }
-
         internal HttpMessage CreateStorageBlobCreatedTestRequest(string topicHostname)
         {
             var message = _pipeline.CreateMessage();
@@ -1524,6 +1299,231 @@ namespace Azure.Messaging.EventGrid
                         }
                         return Response.FromValue(value, message.Response);
                     }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreatePublishEventsRequest(string topicHostname, IEnumerable<EventGridEventInternal> events)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events", false);
+            uri.AppendQuery("api-version", apiVersion, true);
+            request.Uri = uri;
+            request.Headers.Add("Content-Type", "application/json");
+            var content = new Utf8JsonRequestContent();
+            content.JsonWriter.WriteStartArray();
+            foreach (var item in events)
+            {
+                content.JsonWriter.WriteObjectValue(item);
+            }
+            content.JsonWriter.WriteEndArray();
+            request.Content = content;
+            return message;
+        }
+
+        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="events"> An array of events to be published to Event Grid. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response> PublishEventsAsync(string topicHostname, IEnumerable<EventGridEventInternal> events, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+            if (events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            using var message = CreatePublishEventsRequest(topicHostname, events);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    return message.Response;
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="events"> An array of events to be published to Event Grid. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response PublishEvents(string topicHostname, IEnumerable<EventGridEventInternal> events, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+            if (events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            using var message = CreatePublishEventsRequest(topicHostname, events);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    return message.Response;
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreatePublishCloudEventEventsRequest(string topicHostname, IEnumerable<CloudEvent> events)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events", false);
+            uri.AppendQuery("api-version", apiVersion, true);
+            request.Uri = uri;
+            request.Headers.Add("Content-Type", "application/cloudevents-batch+json; charset=utf-8");
+            var content = new Utf8JsonRequestContent();
+            content.JsonWriter.WriteStartArray();
+            foreach (var item in events)
+            {
+                content.JsonWriter.WriteObjectValue(item);
+            }
+            content.JsonWriter.WriteEndArray();
+            request.Content = content;
+            return message;
+        }
+
+        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="events"> An array of events to be published to Event Grid. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response> PublishCloudEventEventsAsync(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+            if (events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            using var message = CreatePublishCloudEventEventsRequest(topicHostname, events);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    return message.Response;
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="events"> An array of events to be published to Event Grid. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response PublishCloudEventEvents(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+            if (events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            using var message = CreatePublishCloudEventEventsRequest(topicHostname, events);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    return message.Response;
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreatePublishCustomEventEventsRequest(string topicHostname, IEnumerable<object> events)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events", false);
+            uri.AppendQuery("api-version", apiVersion, true);
+            request.Uri = uri;
+            request.Headers.Add("Content-Type", "application/json");
+            var content = new Utf8JsonRequestContent();
+            content.JsonWriter.WriteStartArray();
+            foreach (var item in events)
+            {
+                content.JsonWriter.WriteObjectValue(item);
+            }
+            content.JsonWriter.WriteEndArray();
+            request.Content = content;
+            return message;
+        }
+
+        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="events"> An array of events to be published to Event Grid. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response> PublishCustomEventEventsAsync(string topicHostname, IEnumerable<object> events, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+            if (events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            using var message = CreatePublishCustomEventEventsRequest(topicHostname, events);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    return message.Response;
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Publishes a batch of events to an Azure Event Grid topic. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="events"> An array of events to be published to Event Grid. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response PublishCustomEventEvents(string topicHostname, IEnumerable<object> events, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+            if (events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            using var message = CreatePublishCustomEventEventsRequest(topicHostname, events);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    return message.Response;
                 default:
                     throw _clientDiagnostics.CreateRequestFailedException(message.Response);
             }

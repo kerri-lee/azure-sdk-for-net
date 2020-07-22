@@ -19,11 +19,11 @@ namespace Azure.Messaging.EventGrid.Models
             writer.WriteStringValue(Id);
             writer.WritePropertyName("source");
             writer.WriteStringValue(Source);
-            if (Data != null)
-            {
-                writer.WritePropertyName("data");
-                writer.WriteObjectValue(Data);
-            }
+            //if (Data != null)
+            //{
+            //    writer.WritePropertyName("data");
+            //    writer.WriteObjectValue(Data);
+            //}
             if (DataBase64 != null)
             {
                 writer.WritePropertyName("data_base64");

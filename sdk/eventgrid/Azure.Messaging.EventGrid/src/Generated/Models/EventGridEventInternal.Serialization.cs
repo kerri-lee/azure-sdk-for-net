@@ -10,7 +10,7 @@ using Azure.Core;
 
 namespace Azure.Messaging.EventGrid.Models
 {
-    public partial class EventGridEvent : IUtf8JsonSerializable
+    internal partial class EventGridEventInternal : IUtf8JsonSerializable
     {
         void IUtf8JsonSerializable.Write(Utf8JsonWriter writer)
         {

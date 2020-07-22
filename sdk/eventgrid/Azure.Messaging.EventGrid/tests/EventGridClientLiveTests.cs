@@ -59,41 +59,41 @@ namespace Azure.Messaging.EventGrid.Tests
             await client.SendAsync(GetEventsWithTopicsList());
         }
 
-        [Test]
-        public async Task CanPublishCloudEvent()
-        {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridPublisherClient client = InstrumentClient(
-                new EventGridPublisherClient(
-                    new Uri(TestEnvironment.CloudEventTopicHost),
-                    new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
-                    options));
-            await client.SendAsync(GetCloudEventsList());
-        }
+        //[Test]
+        //public async Task CanPublishCloudEvent()
+        //{
+        //    EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+        //    EventGridPublisherClient client = InstrumentClient(
+        //        new EventGridPublisherClient(
+        //            new Uri(TestEnvironment.CloudEventTopicHost),
+        //            new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
+        //            options));
+        //    await client.SendAsync(GetCloudEventsList());
+        //}
 
-        [Test]
-        public async Task CanPublishCloudEventWithCustomObjectPayload()
-        {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridPublisherClient client = InstrumentClient(
-                new EventGridPublisherClient(
-                    new Uri(TestEnvironment.CloudEventTopicHost),
-                    new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
-                    options));
-            await client.SendAsync(GetCloudEventsListWithCustomPayload());
-        }
+        //[Test]
+        //public async Task CanPublishCloudEventWithCustomObjectPayload()
+        //{
+        //    EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+        //    EventGridPublisherClient client = InstrumentClient(
+        //        new EventGridPublisherClient(
+        //            new Uri(TestEnvironment.CloudEventTopicHost),
+        //            new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
+        //            options));
+        //    await client.SendAsync(GetCloudEventsListWithCustomPayload());
+        //}
 
-        [Test]
-        public async Task CanPublishCustomEvent()
-        {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridPublisherClient client = InstrumentClient(
-                new EventGridPublisherClient(
-                    new Uri(TestEnvironment.CustomEventTopicHost),
-                    new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
-                    options));
-            await client.SendAsync(GetCustomEventsList());
-        }
+        //[Test]
+        //public async Task CanPublishCustomEvent()
+        //{
+        //    EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+        //    EventGridPublisherClient client = InstrumentClient(
+        //        new EventGridPublisherClient(
+        //            new Uri(TestEnvironment.CustomEventTopicHost),
+        //            new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
+        //            options));
+        //    await client.SendAsync(GetCustomEventsList());
+        //}
 
         [Test]
         public async Task CanPublishEventUsingSAS()
@@ -112,23 +112,23 @@ namespace Azure.Messaging.EventGrid.Tests
             await sasTokenClient.SendAsync(GetEventsList());
         }
 
-        [Test]
-        public async Task CustomizeSerializedJSONPropertiesToCamelCase()
-        {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            options.Serializer = new JsonObjectSerializer(
-                new JsonSerializerOptions()
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
+        //[Test]
+        //public async Task CustomizeSerializedJSONPropertiesToCamelCase()
+        //{
+        //    EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+        //    options.Serializer = new JsonObjectSerializer(
+        //        new JsonSerializerOptions()
+        //        {
+        //            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        //        });
 
-            EventGridPublisherClient client = InstrumentClient(
-                new EventGridPublisherClient(
-                    new Uri(TestEnvironment.CustomEventTopicHost),
-                    new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
-                    options));
-            await client.SendAsync(GetCustomEventsList());
-        }
+        //    EventGridPublisherClient client = InstrumentClient(
+        //        new EventGridPublisherClient(
+        //            new Uri(TestEnvironment.CustomEventTopicHost),
+        //            new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
+        //            options));
+        //    await client.SendAsync(GetCustomEventsList());
+        //}
 
         private IList<EventGridEvent> GetEventsList()
         {
@@ -140,7 +140,7 @@ namespace Azure.Messaging.EventGrid.Tests
                     new EventGridEvent(
                         Recording.Random.NewGuid().ToString(),
                         $"Subject-{i}",
-                        "hello",
+                        new BinaryData("hello"),
                         "Microsoft.MockPublisher.TestEvent",
                         Recording.Now,
                         "1.0"));
@@ -159,7 +159,7 @@ namespace Azure.Messaging.EventGrid.Tests
                     new EventGridEvent(
                         Recording.Random.NewGuid().ToString(),
                         $"Subject-{i}",
-                        new TestPayload("name", i),
+                        BinaryData.Serialize(new TestPayload("name", i)),
                         "Microsoft.MockPublisher.TestEvent",
                         Recording.Now,
                         "1.0"));
@@ -177,7 +177,7 @@ namespace Azure.Messaging.EventGrid.Tests
                 EventGridEvent newEGEvent = new EventGridEvent(
                         Recording.Random.NewGuid().ToString(),
                         $"Subject-{i}",
-                        "hello",
+                        new BinaryData("hello"),
                         "Microsoft.MockPublisher.TestEvent",
                         Recording.Now,
                         "1.0");
@@ -206,23 +206,23 @@ namespace Azure.Messaging.EventGrid.Tests
             return eventsList;
         }
 
-        private IList<CloudEvent> GetCloudEventsListWithCustomPayload()
-        {
-            List<CloudEvent> eventsList = new List<CloudEvent>();
+        //private IList<CloudEvent> GetCloudEventsListWithCustomPayload()
+        //{
+        //    List<CloudEvent> eventsList = new List<CloudEvent>();
 
-            for (int i = 0; i < 10; i++)
-            {
-                CloudEvent cloudEvent = new CloudEvent(
-                    Recording.Random.NewGuid().ToString(),
-                    $"Subject-{i}",
-                    "record",
-                    "1.0");
-                cloudEvent.Data = new TestPayload("name", i);
-                eventsList.Add(cloudEvent);
-            }
+        //    for (int i = 0; i < 10; i++)
+        //    {
+        //        CloudEvent cloudEvent = new CloudEvent(
+        //            Recording.Random.NewGuid().ToString(),
+        //            $"Subject-{i}",
+        //            "record",
+        //            "1.0");
+        //        cloudEvent.Data = new TestPayload("name", i);
+        //        eventsList.Add(cloudEvent);
+        //    }
 
-            return eventsList;
-        }
+        //    return eventsList;
+        //}
 
         private IList<object> GetCustomEventsList()
         {

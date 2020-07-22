@@ -12,11 +12,11 @@ namespace Azure.Messaging.EventGrid
 {
     internal class EventGridSerializer : IUtf8JsonSerializable
     {
-        public object _customEvent;
+        public BinaryData _customEvent;
         public CancellationToken _cancellationToken;
         public ObjectSerializer _serializer;
 
-        public EventGridSerializer(object customEvent, ObjectSerializer serializer, CancellationToken cancellationToken)
+        public EventGridSerializer(BinaryData customEvent, ObjectSerializer serializer, CancellationToken cancellationToken)
         {
             _customEvent = customEvent;
             _serializer = serializer;
@@ -25,8 +25,15 @@ namespace Azure.Messaging.EventGrid
         public void Write(Utf8JsonWriter writer)
         {
             var stream = new MemoryStream();
-            _serializer.Serialize(stream, _customEvent, _customEvent.GetType(), _cancellationToken);
-            stream.Seek(0, SeekOrigin.Begin);
+            if (!_customEvent.IsSerialized)
+            {
+                _serializer.Serialize(stream, _customEvent.ToString(), typeof(string), _cancellationToken);
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+            else
+            {
+                stream = (MemoryStream)_customEvent.ToStream();
+            }
             JsonDocument.Parse(stream).WriteTo(writer);
         }
     }
