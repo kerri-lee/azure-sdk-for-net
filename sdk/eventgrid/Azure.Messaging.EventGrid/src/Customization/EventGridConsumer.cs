@@ -23,14 +23,10 @@ namespace Azure.Messaging.EventGrid
         /// <summary>
         /// Serializer used to decode events and custom payloads from JSON
         /// </summary>
-        public ObjectSerializer ObjectSerializer { get; set; } = new JsonObjectSerializer(new JsonSerializerOptions()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            AllowTrailingCommas = true
-        });
+        private ObjectSerializer _objectSerializer = new JsonObjectSerializer();
 
         // Initialize some sort of dictionary for custom event types
-        private readonly ConcurrentDictionary<string, Type> _customEventTypeMappings = new ConcurrentDictionary<string, Type>();
+        //private readonly ConcurrentDictionary<string, Type> _customEventTypeMappings = new ConcurrentDictionary<string, Type>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventGridConsumer"/> class.
@@ -62,145 +58,146 @@ namespace Azure.Messaging.EventGrid
         public virtual EventGridEvent[] DeserializeEventGridEvents(string requestContent, CancellationToken cancellationToken = default)
             => DeserializeEventGridEventsInternal(requestContent, false, cancellationToken).EnsureCompleted();
 
-        internal Task<EventGridEvent[]> DeserializeEventGridEventsInternal(string requestContent, bool async, CancellationToken cancellationToken = default)
+        internal async Task<EventGridEvent[]> DeserializeEventGridEventsInternal(string requestContent, bool async, CancellationToken cancellationToken = default)
         {
             // need to check if events are actually encoded in the eg schema
+            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
+
+            EventGridEventInternal[] egEvents;
+            // note: need parameterless constructor generated
             if (async)
             {
-
+                egEvents = (EventGridEventInternal[])await _objectSerializer.DeserializeAsync(stream, typeof(EventGridEventInternal[]), cancellationToken).ConfigureAwait(false);
             }
+            else
+            {
+                egEvents = (EventGridEventInternal[])_objectSerializer.Deserialize(stream, typeof(EventGridEventInternal[]), cancellationToken);
+            }
+
+            List<EventGridEvent> events = new List<EventGridEvent>();
+            foreach (EventGridEventInternal egEvent in egEvents)
+            {
+                var stream1 = new MemoryStream();
+                _objectSerializer.Serialize(stream1, egEvent.Data, egEvent.Data.GetType(), cancellationToken);
+                stream1.Seek(0, SeekOrigin.Begin);
+
+                SystemEventTypeMappingsTypes.SystemEventMappings.TryGetValue(egEvent.EventType, out Type dataType);
+                events.Add(new EventGridEvent()
+                {
+                    Id = egEvent.Id,
+                    Subject = egEvent.Subject,
+                    Data = BinaryData.FromStream(stream1),
+                    EventType = egEvent.EventType,
+                    EventTime = egEvent.EventTime,
+                    DataVersion = egEvent.DataVersion,
+                    DataType = dataType
+                });
+            }
+            return events.ToArray();
+
+            //EventGridEvent[] egEvents = (EventGridEvent[])ObjectSerializer.Deserialize(stream, typeof(EventGridEvent[]), cancellationToken);
+
+            // foreach (EventGridEvent egEvent in egEvents)
+            //{
+            //    // First, let's attempt to find the mapping for the deserialization function in the system event type mapping.
+            //    if (SystemEventTypeMappingsTypes.SystemEventMappings.TryGetValue(egEvent.EventType, out Type typeOfEventData))
+            //    {
+            //        if (egEvent.Data != null)
+            //        {
+            //            MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(egEvent.Data.ToString()));
+            //            if (async)
+            //            {
+            //                egEvent.Data = await ObjectSerializer.DeserializeAsync(dataStream, typeOfEventData, cancellationToken).ConfigureAwait(false);
+            //            }
+            //            else
+            //            {
+            //                egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
+            //            }
+            //        }
+            //    }
+            //    // If not a system event, let's attempt to find the mapping for the event type in the custom event mapping.
+            //    else if (TryGetCustomEventMapping(egEvent.EventType, out typeOfEventData))
+            //    {
+            //        doesn't work with primitive types/strings
+            //        MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(egEvent.Data.ToString()));
+            //        if (async)
+            //        {
+            //            egEvent.Data = await ObjectSerializer.DeserializeAsync(dataStream, typeOfEventData, cancellationToken).ConfigureAwait(false);
+            //        }
+            //        else
+            //        {
+            //            egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
+            //        }
+            //    }
+            //}
+
+            //return Task.FromResult(egEvents);
+        }
+
+        /// <summary>
+        /// Deserializes JSON encoded events and returns an array of events encoded in the CloudEvent schema.
+        /// </summary>
+        /// <param name="requestContent">
+        /// The JSON encoded representation of either a single event or an array or events, encoded in the CloudEvent schema.
+        /// </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        /// <returns>A list of CloudEvents.</returns>
+        public virtual async Task<CloudEvent[]> DeserializeCloudEventsAsync(string requestContent, CancellationToken cancellationToken = default)
+            => await DeserializeCloudEventsInternal(requestContent, true, cancellationToken).ConfigureAwait(false);
+
+        /// <summary>
+        /// Deserializes JSON encoded events and returns an array of events encoded in the CloudEvent schema.
+        /// </summary>
+        /// <param name="requestContent">
+        /// The JSON encoded representation of either a single event or an array or events, encoded in the CloudEvent schema.
+        /// </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        /// <returns>A list of CloudEvents.</returns>
+        public virtual CloudEvent[] DeserializeCloudEvents(string requestContent, CancellationToken cancellationToken = default)
+            => DeserializeCloudEventsInternal(requestContent, false, cancellationToken).EnsureCompleted();
+
+        internal async Task<CloudEvent[]> DeserializeCloudEventsInternal(string requestContent, bool async, CancellationToken cancellationToken = default)
+        {
+            // need to check if events are actually encoded in the cloudevent schema
 
             MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
 
             // note: need parameterless constructor generated
-            EventGridEvent[] egEvents = (EventGridEvent[])ObjectSerializer.Deserialize(stream, typeof(EventGridEvent[]), cancellationToken);
-
-             foreach (EventGridEvent egEvent in egEvents)
+            CloudEventInternal[] cloudEvents;
+            if (async)
             {
-                if (SystemEventTypeMappingsTypes.SystemEventMappings.TryGetValue(egEvent.EventType, out Type typeOfEventData))
-                {
-                    //if (egEvent.Data != null)
-                    //{
-                    //    MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(egEvent.Data.ToString()));
-                    //    if (async)
-                    //    {
-                    //        egEvent.Data = await ObjectSerializer.DeserializeAsync(dataStream, typeOfEventData, cancellationToken).ConfigureAwait(false);
-                    //    }
-                    //    else
-                    //    {
-                    //        egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-                    //    }
-                    //}
-                }
-                // First, let's attempt to find the mapping for the deserialization function in the system event type mapping.
-                //if (SystemEventTypeMappings.SystemEventDeserializers.TryGetValue(egEvent.EventType, out Func<JsonElement, object> systemDeserializationFunction))
-                //{
-                //    if (egEvent.Data != null)
-                //    {
-                //        string eventDataContent = egEvent.Data.ToString();
-                //        JsonDocument document;
-                //        if (async)
-                //        {
-                //            document = await JsonDocument.ParseAsync(new MemoryStream(Encoding.UTF8.GetBytes(eventDataContent)), default, cancellationToken).ConfigureAwait(false);
-                //        }
-                //        else
-                //        {
-                //            document = JsonDocument.Parse(new MemoryStream(Encoding.UTF8.GetBytes(eventDataContent)), default);
-                //        }
-
-                //        egEvent.Data = systemDeserializationFunction(document.RootElement); // note: still need to generate setters for event grid event
-                //    }
-                //}
-                // If not a system event, let's attempt to find the mapping for the event type in the custom event mapping.
-                else if (TryGetCustomEventMapping(egEvent.EventType, out typeOfEventData))
-                {
-                    // doesn't work with primitive types/strings
-                    //MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(egEvent.Data.ToString()));
-                    //if (async)
-                    //{
-                    //    egEvent.Data = await ObjectSerializer.DeserializeAsync(dataStream, typeOfEventData, cancellationToken).ConfigureAwait(false);
-                    //}
-                    //else
-                    //{
-                    //    egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-                    //}
-                }
+                cloudEvents = (CloudEventInternal[])await _objectSerializer.DeserializeAsync(stream, typeof(CloudEventInternal[]), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                cloudEvents = (CloudEventInternal[])_objectSerializer.Deserialize(stream, typeof(CloudEventInternal[]), cancellationToken);
             }
 
-            return Task.FromResult(egEvents);
+            List<CloudEvent> events = new List<CloudEvent>();
+            foreach (CloudEventInternal cloudEvent in cloudEvents)
+            {
+                var stream1 = new MemoryStream();
+                _objectSerializer.Serialize(stream1, cloudEvent.Data, cloudEvent.Data.GetType(), cancellationToken);
+                stream1.Seek(0, SeekOrigin.Begin);
+
+                SystemEventTypeMappingsTypes.SystemEventMappings.TryGetValue(cloudEvent.Type, out Type dataType);
+                events.Add(new CloudEvent()
+                {
+                    Id = cloudEvent.Id,
+                    Source = cloudEvent.Source,
+                    Data = BinaryData.FromStream(stream1),
+                    Type = cloudEvent.Type,
+                    Time = cloudEvent.Time,
+                    Specversion = cloudEvent.Specversion,
+                    Dataschema = cloudEvent.Dataschema,
+                    Datacontenttype = cloudEvent.Datacontenttype,
+                    Subject = cloudEvent.Subject,
+                    AdditionalProperties = cloudEvent.AdditionalProperties ?? new Dictionary<string, object>(),
+                    DataType = dataType
+                });
+            }
+            return events.ToArray();
         }
-
-        ///// <summary>
-        ///// Deserializes JSON encoded events and returns an array of events encoded in the CloudEvent schema.
-        ///// </summary>
-        ///// <param name="requestContent">
-        ///// The JSON encoded representation of either a single event or an array or events, encoded in the CloudEvent schema.
-        ///// </param>
-        ///// <param name="cancellationToken"> The cancellation token to use. </param>
-        ///// <returns>A list of CloudEvents.</returns>
-        //public virtual async Task<CloudEvent[]> DeserializeCloudEventsAsync(string requestContent, CancellationToken cancellationToken = default)
-        //    => await DeserializeCloudEventsInternal(requestContent, true, cancellationToken).ConfigureAwait(false);
-
-        ///// <summary>
-        ///// Deserializes JSON encoded events and returns an array of events encoded in the CloudEvent schema.
-        ///// </summary>
-        ///// <param name="requestContent">
-        ///// The JSON encoded representation of either a single event or an array or events, encoded in the CloudEvent schema.
-        ///// </param>
-        ///// <param name="cancellationToken"> The cancellation token to use. </param>
-        ///// <returns>A list of CloudEvents.</returns>
-        //public virtual CloudEvent[] DeserializeCloudEvents(string requestContent, CancellationToken cancellationToken = default)
-        //    => DeserializeCloudEventsInternal(requestContent, false, cancellationToken).EnsureCompleted();
-
-        //internal async Task<CloudEvent[]> DeserializeCloudEventsInternal(string requestContent, bool async, CancellationToken cancellationToken = default)
-        //{
-        //    // need to check if events are actually encoded in the cloudevent schema
-
-        //    MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
-
-        //    // note: need parameterless constructor generated
-        //    CloudEvent[] cloudEvents = (CloudEvent[])ObjectSerializer.Deserialize(stream, typeof(CloudEvent[]), cancellationToken);
-
-        //    foreach (CloudEvent cloudEvent in cloudEvents)
-        //    {
-
-        //        // First, let's attempt to find the mapping for the deserialization function in the system event type mapping.
-        //        if (SystemEventTypeMappings.SystemEventDeserializers.TryGetValue(cloudEvent.Type, out Func<JsonElement, object> systemDeserializationFunction))
-        //        {
-        //            if (cloudEvent.Data != null)
-        //            {
-        //                string eventDataContent = cloudEvent.Data.ToString();
-        //                JsonDocument document;
-        //                if (async)
-        //                {
-        //                    document = await JsonDocument.ParseAsync(new MemoryStream(Encoding.UTF8.GetBytes(eventDataContent)), default, cancellationToken).ConfigureAwait(false);
-        //                }
-        //                else
-        //                {
-        //                    document = JsonDocument.Parse(new MemoryStream(Encoding.UTF8.GetBytes(eventDataContent)), default);
-        //                }
-
-        //                cloudEvent.Data = systemDeserializationFunction(document.RootElement); // note: still need to generate setters for event grid event
-        //            }
-        //        }
-        //        // If not a system event, let's attempt to find the mapping for the event type in the custom event mapping.
-        //        else if (TryGetCustomEventMapping(cloudEvent.Type, out Type typeOfEventData))
-        //        {
-        //            // doesn't work with primitive types/strings
-        //            MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(cloudEvent.Data.ToString()));
-        //            if (async)
-        //            {
-        //                cloudEvent.Data = await ObjectSerializer.DeserializeAsync(dataStream, typeOfEventData, cancellationToken).ConfigureAwait(false);
-        //            }
-        //            else
-        //            {
-        //                cloudEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-        //            }
-        //        }
-        //    }
-
-        //    return cloudEvents;
-        //}
 
         /// <summary>
         /// Deserializes JSON encoded events and returns an array of events encoded in a custom event schema.
@@ -230,77 +227,77 @@ namespace Azure.Messaging.EventGrid
 
             if (async)
             {
-                return (T[])await ObjectSerializer.DeserializeAsync(stream, typeof(T[]), cancellationToken).ConfigureAwait(false);
+                return (T[])await _objectSerializer.DeserializeAsync(stream, typeof(T[]), cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                return (T[])ObjectSerializer.Deserialize(stream, typeof(T[]), cancellationToken);
+                return (T[])_objectSerializer.Deserialize(stream, typeof(T[]), cancellationToken);
             }
         }
 
-        /// <summary>
-        /// Adds or updates a custom event mapping that associates an eventType string with the corresponding type of event data.
-        /// </summary>
-        /// <param name="eventType">The event type to register, such as "Contoso.Items.ItemReceived"</param>
-        /// <param name="eventDataType">The type of eventdata corresponding to this eventType, such as typeof(ContosoItemReceivedEventData)</param>
-        public void AddOrUpdateCustomEventMapping(string eventType, Type eventDataType)
-        {
-            ValidateEventType(eventType);
+        ///// <summary>
+        ///// Adds or updates a custom event mapping that associates an eventType string with the corresponding type of event data.
+        ///// </summary>
+        ///// <param name="eventType">The event type to register, such as "Contoso.Items.ItemReceived"</param>
+        ///// <param name="eventDataType">The type of eventdata corresponding to this eventType, such as typeof(ContosoItemReceivedEventData)</param>
+        //public void AddOrUpdateCustomEventMapping(string eventType, Type eventDataType)
+        //{
+        //    ValidateEventType(eventType);
 
-            if (eventDataType == null)
-            {
-                throw new ArgumentNullException(nameof(eventDataType));
-            }
+        //    if (eventDataType == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(eventDataType));
+        //    }
 
-            _customEventTypeMappings.AddOrUpdate(
-                eventType,
-                eventDataType,
-                (_, existingValue) => eventDataType);
-        }
+        //    _customEventTypeMappings.AddOrUpdate(
+        //        eventType,
+        //        eventDataType,
+        //        (_, existingValue) => eventDataType);
+        //}
 
-        /// <summary>
-        /// Gets information about a custom event mapping.
-        /// </summary>
-        /// <param name="eventType">The registered event type, such as "Contoso.Items.ItemReceived"</param>
-        /// <param name="eventDataType">The type of eventdata corresponding to this eventType, such as typeof(ContosoItemReceivedEventData)</param>
-        /// <returns>True if the specified mapping exists.</returns>
-        public bool TryGetCustomEventMapping(string eventType, out Type eventDataType)
-        {
-            ValidateEventType(eventType);
+        ///// <summary>
+        ///// Gets information about a custom event mapping.
+        ///// </summary>
+        ///// <param name="eventType">The registered event type, such as "Contoso.Items.ItemReceived"</param>
+        ///// <param name="eventDataType">The type of eventdata corresponding to this eventType, such as typeof(ContosoItemReceivedEventData)</param>
+        ///// <returns>True if the specified mapping exists.</returns>
+        //public bool TryGetCustomEventMapping(string eventType, out Type eventDataType)
+        //{
+        //    ValidateEventType(eventType);
 
-            return _customEventTypeMappings.TryGetValue(eventType, out eventDataType);
-        }
+        //    return _customEventTypeMappings.TryGetValue(eventType, out eventDataType);
+        //}
 
-        /// <summary>
-        /// List all registered custom event mappings.
-        /// </summary>
-        /// <returns>An IEnumerable of mappings</returns>
-        public IEnumerable<KeyValuePair<string, Type>> ListAllCustomEventMappings()
-        {
-            foreach (KeyValuePair<string, Type> kvp in _customEventTypeMappings)
-            {
-                yield return kvp;
-            }
-        }
+        ///// <summary>
+        ///// List all registered custom event mappings.
+        ///// </summary>
+        ///// <returns>An IEnumerable of mappings</returns>
+        //public IEnumerable<KeyValuePair<string, Type>> ListAllCustomEventMappings()
+        //{
+        //    foreach (KeyValuePair<string, Type> kvp in _customEventTypeMappings)
+        //    {
+        //        yield return kvp;
+        //    }
+        //}
 
-        /// <summary>
-        /// Removes a custom event mapping.
-        /// </summary>
-        /// <param name="eventType">The registered event type, such as "Contoso.Items.ItemReceived"</param>
-        /// <param name="eventDataType">The type of eventdata corresponding to this eventType, such as typeof(ContosoItemReceivedEventData)</param>
-        /// <returns>True if the specified mapping was removed successfully.</returns>
-        public bool TryRemoveCustomEventMapping(string eventType, out Type eventDataType)
-        {
-            ValidateEventType(eventType);
-            return _customEventTypeMappings.TryRemove(eventType, out eventDataType);
-        }
+        ///// <summary>
+        ///// Removes a custom event mapping.
+        ///// </summary>
+        ///// <param name="eventType">The registered event type, such as "Contoso.Items.ItemReceived"</param>
+        ///// <param name="eventDataType">The type of eventdata corresponding to this eventType, such as typeof(ContosoItemReceivedEventData)</param>
+        ///// <returns>True if the specified mapping was removed successfully.</returns>
+        //public bool TryRemoveCustomEventMapping(string eventType, out Type eventDataType)
+        //{
+        //    ValidateEventType(eventType);
+        //    return _customEventTypeMappings.TryRemove(eventType, out eventDataType);
+        //}
 
-        internal static void ValidateEventType(string eventType)
-        {
-            if (string.IsNullOrEmpty(eventType))
-            {
-                throw new ArgumentNullException(nameof(eventType));
-            }
-        }
+        //internal static void ValidateEventType(string eventType)
+        //{
+        //    if (string.IsNullOrEmpty(eventType))
+        //    {
+        //        throw new ArgumentNullException(nameof(eventType));
+        //    }
+        //}
     }
 }

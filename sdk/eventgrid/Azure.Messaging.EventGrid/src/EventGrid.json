@@ -85,7 +85,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/CloudEventEvent"
+                "$ref": "#/definitions/CloudEventEventInternal"
               }
             }
           },
@@ -187,7 +187,7 @@
         }
       }
     },
-    "CloudEventEvent": {
+    "CloudEventEventInternal": {
       "type": "object",
       "description": "Properties of an event published to an Event Grid topic using the CloudEvent 1.0 Schema",
       "required": [

@@ -10,13 +10,13 @@ namespace Azure.Messaging.EventGrid
     /// <summary>
     /// SAS token used to authenticate to the Event Grid service.
     /// </summary>
-    public class SharedAccessSignatureCredential
+    public class EventGridSharedAccessSignatureCredential
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SharedAccessSignatureCredential"/> class.
+        /// Initializes a new instance of the <see cref="EventGridSharedAccessSignatureCredential"/> class.
         /// </summary>
         /// <param name="signature">SAS token used for authentication</param>
-        public SharedAccessSignatureCredential(string signature)
+        public EventGridSharedAccessSignatureCredential(string signature)
         {
             Signature = signature;
         }

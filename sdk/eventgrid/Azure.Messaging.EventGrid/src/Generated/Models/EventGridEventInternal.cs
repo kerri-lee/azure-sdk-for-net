@@ -12,6 +12,11 @@ namespace Azure.Messaging.EventGrid.Models
     /// <summary> Properties of an event published to an Event Grid topic using the EventGrid Schema. </summary>
     internal partial class EventGridEventInternal
     {
+        public EventGridEventInternal()
+        {
+
+        }
+        
         /// <summary> Initializes a new instance of EventGridEventInternal. </summary>
         /// <param name="id"> An unique identifier for the event. </param>
         /// <param name="subject"> A resource path relative to the topic path. </param>
@@ -72,20 +77,20 @@ namespace Azure.Messaging.EventGrid.Models
         }
 
         /// <summary> An unique identifier for the event. </summary>
-        public string Id { get; }
+        public string Id { get; set; }
         /// <summary> The resource path of the event source. </summary>
         public string Topic { get; set; }
         /// <summary> A resource path relative to the topic path. </summary>
-        public string Subject { get; }
+        public string Subject { get; set; }
         /// <summary> Event data specific to the event type. </summary>
-        public object Data { get; }
+        public object Data { get; set; }
         /// <summary> The type of the event that occurred. </summary>
-        public string EventType { get; }
+        public string EventType { get; set; }
         /// <summary> The time (in UTC) the event was generated. </summary>
-        public DateTimeOffset EventTime { get; }
+        public DateTimeOffset EventTime { get; set; }
         /// <summary> The schema version of the event metadata. </summary>
-        public string MetadataVersion { get; }
+        public string MetadataVersion { get; set; }
         /// <summary> The schema version of the data object. </summary>
-        public string DataVersion { get; }
+        public string DataVersion { get; set; }
     }
 }

@@ -14,7 +14,6 @@ namespace Azure.Messaging.EventGrid.Models
         /// </summary>
         public EventGridEvent()
         {
-
         }
 
         /// <summary> Initializes a new instance of EventGridEvent. </summary>
@@ -34,10 +33,10 @@ namespace Azure.Messaging.EventGrid.Models
             {
                 throw new ArgumentNullException(nameof(subject));
             }
-            //if (data == default(BinaryData))
-            //{
-            //    throw new ArgumentNullException(nameof(data));
-            //}
+            if (data.Equals(default(BinaryData)))
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
             if (eventType == null)
             {
                 throw new ArgumentNullException(nameof(eventType));
@@ -92,5 +91,7 @@ namespace Azure.Messaging.EventGrid.Models
         public string MetadataVersion { get; set; }
         /// <summary> The schema version of the data object. </summary>
         public string DataVersion { get; set; }
+        /// <summary> If event is a system event, describes the event type </summary>
+        public Type DataType { get; internal set; }
     }
 }

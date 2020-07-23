@@ -1379,7 +1379,7 @@ namespace Azure.Messaging.EventGrid
             }
         }
 
-        internal HttpMessage CreatePublishCloudEventEventsRequest(string topicHostname, IEnumerable<CloudEvent> events)
+        internal HttpMessage CreatePublishCloudEventEventsRequest(string topicHostname, IEnumerable<CloudEventInternal> events)
         {
             var message = _pipeline.CreateMessage();
             var request = message.Request;
@@ -1406,7 +1406,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public async Task<Response> PublishCloudEventEventsAsync(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+        public async Task<Response> PublishCloudEventEventsAsync(string topicHostname, IEnumerable<CloudEventInternal> events, CancellationToken cancellationToken = default)
         {
             if (topicHostname == null)
             {
@@ -1432,7 +1432,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        public Response PublishCloudEventEvents(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+        public Response PublishCloudEventEvents(string topicHostname, IEnumerable<CloudEventInternal> events, CancellationToken cancellationToken = default)
         {
             if (topicHostname == null)
             {

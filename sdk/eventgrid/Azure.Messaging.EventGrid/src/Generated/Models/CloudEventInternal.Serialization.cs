@@ -10,7 +10,7 @@ using Azure.Core;
 
 namespace Azure.Messaging.EventGrid.Models
 {
-    public partial class CloudEvent : IUtf8JsonSerializable
+    internal partial class CloudEventInternal : IUtf8JsonSerializable
     {
         void IUtf8JsonSerializable.Write(Utf8JsonWriter writer)
         {
@@ -19,11 +19,11 @@ namespace Azure.Messaging.EventGrid.Models
             writer.WriteStringValue(Id);
             writer.WritePropertyName("source");
             writer.WriteStringValue(Source);
-            //if (Data != null)
-            //{
-            //    writer.WritePropertyName("data");
-            //    writer.WriteObjectValue(Data);
-            //}
+            if (Data != null)
+            {
+                writer.WritePropertyName("data");
+                writer.WriteObjectValue(Data);
+            }
             if (DataBase64 != null)
             {
                 writer.WritePropertyName("data_base64");

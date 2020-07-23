@@ -22,18 +22,45 @@ namespace Azure.Messaging.EventGrid.Tests
             _eventGridConsumer = new EventGridConsumer();
         }
 
-        //[Test]
-        //public void ConsumeStorageBlobDeletedEventWithExtraProperty()
-        //{
-        //    string requestContent = "[{   \"topic\": \"/subscriptions/id/resourceGroups/Storage/providers/Microsoft.Storage/storageAccounts/xstoretestaccount\",  \"subject\": \"/blobServices/default/containers/testcontainer/blobs/testfile.txt\",  \"eventType\": \"Microsoft.Storage.BlobDeleted\",  \"eventTime\": \"2017-11-07T20:09:22.5674003Z\",  \"id\": \"4c2359fe-001e-00ba-0e04-58586806d298\",  \"data\": {    \"api\": \"DeleteBlob\",    \"requestId\": \"4c2359fe-001e-00ba-0e04-585868000000\",    \"contentType\": \"text/plain\",    \"blobType\": \"BlockBlob\",    \"url\": \"https://example.blob.core.windows.net/testcontainer/testfile.txt\",    \"sequencer\": \"0000000000000281000000000002F5CA\",   \"brandNewProperty\": \"0000000000000281000000000002F5CA\", \"storageDiagnostics\": {      \"batchId\": \"b68529f3-68cd-4744-baa4-3c0498ec19f0\"    }  },  \"dataVersion\": \"\",  \"metadataVersion\": \"1\"}]";
+        [Test]
+        public void ConsumeStorageBlobDeletedEventWithExtraProperty()
+        {
+            string requestContent = "[{   \"topic\": \"/subscriptions/id/resourceGroups/Storage/providers/Microsoft.Storage/storageAccounts/xstoretestaccount\",  \"subject\": \"/blobServices/default/containers/testcontainer/blobs/testfile.txt\",  \"eventType\": \"Microsoft.Storage.BlobDeleted\",  \"eventTime\": \"2017-11-07T20:09:22.5674003Z\",  \"id\": \"4c2359fe-001e-00ba-0e04-58586806d298\",  \"data\": {    \"api\": \"DeleteBlob\",    \"requestId\": \"4c2359fe-001e-00ba-0e04-585868000000\",    \"contentType\": \"text/plain\",    \"blobType\": \"BlockBlob\",    \"url\": \"https://example.blob.core.windows.net/testcontainer/testfile.txt\",    \"sequencer\": \"0000000000000281000000000002F5CA\",   \"brandNewProperty\": \"0000000000000281000000000002F5CA\", \"storageDiagnostics\": {      \"batchId\": \"b68529f3-68cd-4744-baa4-3c0498ec19f0\"    }  },  \"dataVersion\": \"\",  \"metadataVersion\": \"1\"}]";
 
-        //    EventGridEvent[] events = _eventGridConsumer.DeserializeEventGridEvents(requestContent);
+            EventGridEvent[] events = _eventGridConsumer.DeserializeEventGridEvents(requestContent);
 
-        //    Assert.NotNull(events);
-        //    Assert.True(events[0].Data is StorageBlobDeletedEventData);
-        //    StorageBlobDeletedEventData eventData = (StorageBlobDeletedEventData)events[0].Data;
-        //    Assert.AreEqual("https://example.blob.core.windows.net/testcontainer/testfile.txt", eventData.Url);
-        //}
+            Assert.NotNull(events);
+
+            var egEvent = events[0];
+
+            if (egEvent.DataType.Equals(typeof(StorageBlobDeletedEventData)))
+            {
+                var data = egEvent.Data.Deserialize<StorageBlobDeletedEventData>(new JsonObjectSerializer(new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+            }
+        }
+
+        [Test]
+        public void ConsumeStorageBlobDeletedCloudEventWithExtraProperty()
+        {
+            string requestContent = "[{   \"id\":\"994bc3f8-c90c-6fc3-9e83-6783db2221d5\",\"source\":\"Subject-0\",  \"data\": {    \"api\": \"DeleteBlob\",    \"requestId\": \"4c2359fe-001e-00ba-0e04-585868000000\",    \"contentType\": \"text/plain\",    \"blobType\": \"BlockBlob\",    \"url\": \"https://example.blob.core.windows.net/testcontainer/testfile.txt\",    \"sequencer\": \"0000000000000281000000000002F5CA\",   \"brandNewProperty\": \"0000000000000281000000000002F5CA\", \"storageDiagnostics\": {      \"batchId\": \"b68529f3-68cd-4744-baa4-3c0498ec19f0\"    }  }, \"type\":\"Microsoft.Storage.BlobDeleted\",\"specversion\":\"1.0\"}]";
+
+            CloudEvent[] events = _eventGridConsumer.DeserializeCloudEvents(requestContent);
+
+            Assert.NotNull(events);
+
+            var egEvent = events[0];
+
+            if (egEvent.DataType.Equals(typeof(StorageBlobDeletedEventData)))
+            {
+                var data = egEvent.Data.Deserialize<StorageBlobDeletedEventData>(new JsonObjectSerializer(new JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                }));
+            }
+        }
 
         //[Test]
         //public void ConsumeCustomEvents()
@@ -110,22 +137,22 @@ namespace Azure.Messaging.EventGrid.Tests
         //    Assert.AreEqual("stringdata", eventData);
         //}
 
-        [Test]
-        public void TestCustomEventMappings()
-        {
-            EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
-            eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemSent", typeof(ContosoItemSentEventData));
-            eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(ContosoItemReceivedEventData));
+        //[Test]
+        //public void TestCustomEventMappings()
+        //{
+        //    EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
+        //    eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemSent", typeof(ContosoItemSentEventData));
+        //    eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(ContosoItemReceivedEventData));
 
-            IReadOnlyList<KeyValuePair<string, Type>> list = eventGridConsumer2.ListAllCustomEventMappings().ToList();
-            Assert.AreEqual(2, list.Count);
+        //    IReadOnlyList<KeyValuePair<string, Type>> list = eventGridConsumer2.ListAllCustomEventMappings().ToList();
+        //    Assert.AreEqual(2, list.Count);
 
-            Assert.True(eventGridConsumer2.TryGetCustomEventMapping("Contoso.Items.ItemSent", out Type retrievedType));
-            Assert.AreEqual(typeof(ContosoItemSentEventData), retrievedType);
+        //    Assert.True(eventGridConsumer2.TryGetCustomEventMapping("Contoso.Items.ItemSent", out Type retrievedType));
+        //    Assert.AreEqual(typeof(ContosoItemSentEventData), retrievedType);
 
-            Assert.True(eventGridConsumer2.TryRemoveCustomEventMapping("Contoso.Items.ItemReceived", out retrievedType));
-            Assert.AreEqual(typeof(ContosoItemReceivedEventData), retrievedType);
-        }
+        //    Assert.True(eventGridConsumer2.TryRemoveCustomEventMapping("Contoso.Items.ItemReceived", out retrievedType));
+        //    Assert.AreEqual(typeof(ContosoItemReceivedEventData), retrievedType);
+        //}
 
         //[Test]
         //public void ConsumeMultipleEventsInSameBatch()

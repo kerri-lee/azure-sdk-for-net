@@ -16,23 +16,25 @@ namespace Azure.Messaging.EventGrid
         public CancellationToken _cancellationToken;
         public ObjectSerializer _serializer;
 
-        public EventGridSerializer(BinaryData customEvent, ObjectSerializer serializer, CancellationToken cancellationToken)
+        public EventGridSerializer(BinaryData customEvent, CancellationToken cancellationToken)
         {
             _customEvent = customEvent;
-            _serializer = serializer;
             _cancellationToken = cancellationToken;
+            _serializer = new JsonObjectSerializer();
         }
         public void Write(Utf8JsonWriter writer)
         {
-            var stream = new MemoryStream();
-            if (!_customEvent.IsSerialized)
+            Stream stream;
+
+            if (_customEvent.Format != BinaryDataFormat.JsonObjectSerializer)
             {
+                stream = new MemoryStream();
                 _serializer.Serialize(stream, _customEvent.ToString(), typeof(string), _cancellationToken);
                 stream.Seek(0, SeekOrigin.Begin);
             }
             else
             {
-                stream = (MemoryStream)_customEvent.ToStream();
+                stream = _customEvent.ToStream();
             }
             JsonDocument.Parse(stream).WriteTo(writer);
         }

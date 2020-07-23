@@ -39,7 +39,7 @@ namespace Azure.Core
         /// <summary>
         ///
         /// </summary>
-        public bool IsSerialized { get; }
+        public BinaryDataFormat Format { get; }
 
         /// <summary>
         /// The backing store for the <see cref="BinaryData"/> instance.
@@ -54,7 +54,7 @@ namespace Azure.Core
         public BinaryData(ReadOnlySpan<byte> data)
         {
             Bytes = data.ToArray();
-            IsSerialized = false;
+            Format = BinaryDataFormat.Binary;
         }
 
         /// <summary>
@@ -62,23 +62,25 @@ namespace Azure.Core
         /// passed in bytes.
         /// </summary>
         /// <param name="data">Byte data.</param>
-        /// <param name="isJson"></param>
-        private BinaryData(ReadOnlyMemory<byte> data, bool isJson = false)
+        /// <param name="format"></param>
+        private BinaryData(ReadOnlyMemory<byte> data, BinaryDataFormat format = default)
         {
             Bytes = data;
-            this.IsSerialized = isJson;
+            Format = format;
         }
+
         /// <summary>
         /// Creates a binary data instance from a string by converting
         /// the string to bytes using UTF-8 encoding.
         /// </summary>
         /// <param name="data">The string data.</param>
+        /// <param name="format"></param>
         /// <returns>A <see cref="BinaryData"/> instance.</returns>
         /// <remarks>The byte order mark is not included as part of the encoding process.</remarks>
-        public BinaryData(string data)
+        public BinaryData(string data, BinaryDataFormat format = BinaryDataFormat.Utf8)
         {
             Bytes = s_encoding.GetBytes(data);
-            IsSerialized = false;
+            Format = format;
         }
 
         /// <summary>
@@ -132,7 +134,7 @@ namespace Azure.Core
                 {
                     stream.CopyTo(memoryStream);
                 }
-                return new BinaryData((ReadOnlyMemory<byte>) memoryStream.ToArray());
+                return new BinaryData((ReadOnlyMemory<byte>)memoryStream.ToArray());
             }
         }
 
@@ -201,7 +203,6 @@ namespace Azure.Core
             CancellationToken cancellationToken)
         {
             Argument.AssertNotNull(serializer, nameof(serializer));
-
             using var memoryStream = new MemoryStream();
             if (async)
             {
@@ -211,9 +212,12 @@ namespace Azure.Core
             {
                 serializer.Serialize(memoryStream, data, typeof(T), cancellationToken);
             }
-            var binary = new BinaryData((ReadOnlyMemory<byte>) memoryStream.ToArray(), true);
-
-            return binary;
+            BinaryDataFormat format = BinaryDataFormat.ObjectSerializer;
+            if (serializer is JsonObjectSerializer)
+            {
+                format = BinaryDataFormat.JsonObjectSerializer;
+            }
+            return new BinaryData((ReadOnlyMemory<byte>)memoryStream.ToArray(), format);
         }
 
         /// <summary>

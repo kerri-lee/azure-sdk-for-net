@@ -21,7 +21,7 @@ namespace Azure.Messaging.EventGrid.Tests
             string sasToken = client.BuildSharedAccessSignature(DateTimeOffset.UtcNow.AddMinutes(60));
             EventGridPublisherClient sasTokenClient = new EventGridPublisherClient(
                 new Uri("https://exampletopic.westus2-1.eventgrid.azure.net/api/events"),
-                new SharedAccessSignatureCredential("thisIsNotAFakeCredential"));
+                new EventGridSharedAccessSignatureCredential("thisIsNotAFakeCredential"));
 
             Assert.That(() => sasTokenClient.BuildSharedAccessSignature(DateTimeOffset.UtcNow.AddMinutes(60)),
                 Throws.InstanceOf<NotSupportedException>(),
