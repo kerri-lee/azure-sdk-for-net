@@ -84,6 +84,30 @@ namespace Azure.Messaging.EventGrid.Tests
         }
 
         [Test]
+        public async Task CanPublishCloudEventWithRawJsonString()
+        {
+            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
+                    new Uri(TestEnvironment.CloudEventTopicHost),
+                    new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
+                    options));
+            await client.SendEventsAsync(GetCloudEventsListWithJsonString());
+        }
+
+        [Test]
+        public async Task CanPublishCloudEventWithBinaryData()
+        {
+            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
+                    new Uri(TestEnvironment.CloudEventTopicHost),
+                    new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
+                    options));
+            await client.SendEventsAsync(GetCloudEventsListWithBinaryData());
+        }
+
+        [Test]
         public async Task CanPublishCustomEvent()
         {
             EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
@@ -108,24 +132,6 @@ namespace Azure.Messaging.EventGrid.Tests
                     Recording.InstrumentClientOptions(new EventGridClientOptions())));
             await sasTokenClient.SendEventsAsync(GetEventsList());
         }
-
-        //[Test]
-        //public async Task CustomizeSerializedJSONPropertiesToCamelCase()
-        //{
-        //    EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-        //    options.Serializer = new JsonObjectSerializer(
-        //        new JsonSerializerOptions()
-        //        {
-        //            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        //        });
-
-        //    EventGridPublisherClient client = InstrumentClient(
-        //        new EventGridPublisherClient(
-        //            new Uri(TestEnvironment.CustomEventTopicHost),
-        //            new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
-        //            options));
-        //    await client.SendAsync(GetCustomEventsList());
-        //}
 
         private IList<EventGridEvent> GetEventsList()
         {
@@ -201,7 +207,8 @@ namespace Azure.Messaging.EventGrid.Tests
                         $"Subject-{i}",
                         "record")
                     {
-                        Id = Recording.Random.NewGuid().ToString()
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Time = Recording.Now
                     });
             }
 
@@ -214,12 +221,15 @@ namespace Azure.Messaging.EventGrid.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                CloudEvent cloudEvent = new CloudEvent(
-                    $"Subject-{i}",
-                    "record");
-                cloudEvent.Data = BinaryData.Serialize(new TestPayload("name", i));
-                cloudEvent.Id = Recording.Random.NewGuid().ToString();
-                eventsList.Add(cloudEvent);
+                eventsList.Add(
+                    new CloudEvent(
+                        $"Subject-{i}",
+                        "record")
+                    {
+                        Data = BinaryData.Serialize(new TestPayload("name", i)),
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Time = Recording.Now
+                    });
             }
 
             return eventsList;
@@ -231,12 +241,34 @@ namespace Azure.Messaging.EventGrid.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                CloudEvent cloudEvent = new CloudEvent(
-                    $"Subject-{i}",
-                    "record");
-                cloudEvent.Data = new BinaryData("[{   \"topic\": \"/subscriptions/id/resourceGroups/Storage/providers/Microsoft.Storage/storageAccounts/xstoretestaccount\",  \"subject\": \"/blobServices/default/containers/testcontainer/blobs/testfile.txt\",  \"eventType\": \"Microsoft.Storage.BlobDeleted\",  \"eventTime\": \"2017-11-07T20:09:22.5674003Z\",  \"id\": \"4c2359fe-001e-00ba-0e04-58586806d298\",  \"data\": {    \"api\": \"DeleteBlob\",    \"requestId\": \"4c2359fe-001e-00ba-0e04-585868000000\",    \"contentType\": \"text/plain\",    \"blobType\": \"BlockBlob\",    \"url\": \"https://example.blob.core.windows.net/testcontainer/testfile.txt\",    \"sequencer\": \"0000000000000281000000000002F5CA\",   \"brandNewProperty\": \"0000000000000281000000000002F5CA\", \"storageDiagnostics\": {      \"batchId\": \"b68529f3-68cd-4744-baa4-3c0498ec19f0\"    }  },  \"dataVersion\": \"\",  \"metadataVersion\": \"1\"}]");
-                cloudEvent.Id = Recording.Random.NewGuid().ToString();
-                eventsList.Add(cloudEvent);
+                eventsList.Add(
+                    new CloudEvent(
+                        $"Subject-{i}",
+                        "record")
+                    {
+                        Data = new BinaryData("[{   \"property1\": \"abc\",  \"property2\": \"123\"}]"),
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Time = Recording.Now
+                    });
+            }
+            return eventsList;
+        }
+
+        private IList<CloudEvent> GetCloudEventsListWithBinaryData()
+        {
+            List<CloudEvent> eventsList = new List<CloudEvent>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                eventsList.Add(
+                    new CloudEvent(
+                        $"Subject-{i}",
+                        "record")
+                    {
+                        Data = new BinaryData(Encoding.UTF8.GetBytes("data")),
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Time = Recording.Now
+                    });
             }
             return eventsList;
         }
