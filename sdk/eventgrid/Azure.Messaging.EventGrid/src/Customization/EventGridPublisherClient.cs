@@ -16,7 +16,7 @@ using Azure.Messaging.EventGrid.Models;
 namespace Azure.Messaging.EventGrid
 {
     /// <summary>
-    /// Client used to interact with the Event Grid service
+    /// Client used to interact with the Event Grid service.
     /// </summary>
     public class EventGridPublisherClient
     {
@@ -27,31 +27,31 @@ namespace Azure.Messaging.EventGrid
         private readonly AzureKeyCredential _key;
         private string _apiVersion;
 
-        /// <summary>Initalizes an instance of EventGridClient</summary>
+        /// <summary>Initalizes an instance of EventGridClient.</summary>
         protected EventGridPublisherClient()
         {
         }
 
-        /// <summary>Initalizes an instance of EventGridClient</summary>
+        /// <summary>Initalizes an instance of EventGridClient.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
-        /// <param name="credential">Credential used to connect to Azure</param>
+        /// <param name="credential">Credential used to connect to Azure.</param>
         public EventGridPublisherClient(Uri endpoint, AzureKeyCredential credential)
             : this(endpoint, credential, new EventGridClientOptions())
         {
         }
 
-        /// <summary>Initalizes an instance of EventGridClient</summary>
+        /// <summary>Initalizes an instance of EventGridClient.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
-        /// <param name="credential">Credential used to connect to Azure</param>
+        /// <param name="credential">Credential used to connect to Azure.</param>
         public EventGridPublisherClient(Uri endpoint, EventGridSharedAccessSignatureCredential credential)
             : this(endpoint, credential, new EventGridClientOptions())
         {
         }
 
-        /// <summary>Initalizes an instance of the<see cref="EventGridPublisherClient"/> class</summary>
+        /// <summary>Initalizes an instance of the<see cref="EventGridPublisherClient"/> class.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
-        /// <param name="credential">Credential used to connect to Azure</param>
-        /// <param name="options">Configuring options</param>
+        /// <param name="credential">Credential used to connect to Azure.</param>
+        /// <param name="options">Configuring options.</param>
         public EventGridPublisherClient(Uri endpoint, AzureKeyCredential credential, EventGridClientOptions options)
         {
             Argument.AssertNotNull(credential, nameof(credential));
@@ -68,8 +68,8 @@ namespace Azure.Messaging.EventGrid
         /// Initializes a new instance of the <see cref="EventGridPublisherClient"/> class.
         /// </summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
-        /// <param name="credential">Credential used to connect to Azure</param>
-        /// <param name="options">Configuring options</param>
+        /// <param name="credential">Credential used to connect to Azure.</param>
+        /// <param name="options">Configuring options.</param>
         public EventGridPublisherClient(Uri endpoint, EventGridSharedAccessSignatureCredential credential, EventGridClientOptions options)
         {
             Argument.AssertNotNull(credential, nameof(credential));
@@ -94,7 +94,7 @@ namespace Azure.Messaging.EventGrid
 
         /// <summary> Publishes a batch of EventGridEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="async">Whether to invoke the operation asynchronously</param>
+        /// <param name="async">Whether to invoke the operation asynchronously.</param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         private async Task<Response> SendEventsInternal(IEnumerable<EventGridEvent> events, bool async, CancellationToken cancellationToken = default)
         {
@@ -162,7 +162,7 @@ namespace Azure.Messaging.EventGrid
 
         /// <summary> Publishes a batch of CloudEvents to an Azure Event Grid topic. </summary>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
-        /// <param name="async">Whether to invoke the operation asynchronously</param>
+        /// <param name="async">Whether to invoke the operation asynchronously.</param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         private async Task<Response> SendCloudEventsInternal(IEnumerable<CloudEvent> events, bool async, CancellationToken cancellationToken = default)
         {
@@ -180,40 +180,33 @@ namespace Azure.Messaging.EventGrid
                     // Events cannot be null
                     Argument.AssertNotNull(cloudEvent, nameof(cloudEvent));
 
+                    CloudEventInternal newCloudEvent = new CloudEventInternal(
+                        cloudEvent.Id,
+                        cloudEvent.Source,
+                        cloudEvent.Type,
+                        cloudEvent.SpecVersion)
+                    {
+                        Time = cloudEvent.Time,
+                        Datacontenttype = cloudEvent.DataContentType,
+                        Dataschema = cloudEvent.DataSchema,
+                        Subject = cloudEvent.Subject
+                    };
+
                     // The 'Data' field is optional for the CloudEvent spec
                     if (!cloudEvent.Data.Equals(default(BinaryData)))
                     {
-                        eventsWithSerializedPayloads.Add(
-                            new CloudEventInternal(
-                                cloudEvent.Id,
-                                cloudEvent.Source,
-                                cloudEvent.Type,
-                                cloudEvent.Specversion)
-                            {
-                                Data = new EventGridSerializer(
-                                    cloudEvent.Data,
-                                    cancellationToken),
-                                Time = cloudEvent.Time,
-                                Datacontenttype = cloudEvent.Datacontenttype,
-                                Dataschema = cloudEvent.Dataschema,
-                                Subject = cloudEvent.Subject
-                            });
+                        if (cloudEvent.Data.Format == BinaryDataFormat.Binary)
+                        {
+                            newCloudEvent.DataBase64 = Convert.ToBase64String(cloudEvent.Data.Bytes.ToArray());
+                        }
+                        else
+                        {
+                            newCloudEvent.Data = new EventGridSerializer(
+                                cloudEvent.Data,
+                                cancellationToken);
+                        }
                     }
-                    else
-                    {
-                        eventsWithSerializedPayloads.Add(
-                            new CloudEventInternal(
-                                cloudEvent.Id,
-                                cloudEvent.Source,
-                                cloudEvent.Type,
-                                cloudEvent.Specversion)
-                            {
-                                Time = cloudEvent.Time,
-                                Datacontenttype = cloudEvent.Datacontenttype,
-                                Dataschema = cloudEvent.Dataschema,
-                                Subject = cloudEvent.Subject
-                            });
-                    }
+                    eventsWithSerializedPayloads.Add(newCloudEvent);
                 }
                 if (async)
                 {
@@ -294,30 +287,24 @@ namespace Azure.Messaging.EventGrid
         }
 
         /// <summary>
-        /// Creates a SAS token for use with Event Grid service
+        /// Creates a SAS token for use with Event Grid service.
         /// </summary>
-        /// <param name="expirationUtc">Time at which the SAS token becomes invalid for authentication</param>
-        /// <returns>Returns the generated SAS token string</returns>
-        public string BuildSharedAccessSignature(DateTimeOffset expirationUtc)
+        /// <param name="resource">The path for the event grid topic to which you're sending events. For example, https://TOPIC-NAME.REGION-NAME.eventgrid.azure.net/eventGrid/api/events?api-version=2019-06-01. </param>
+        /// <param name="expirationUtc">Time at which the SAS token becomes invalid for authentication.</param>
+        /// <param name="key">Key credential used to generate the token.</param>
+        /// <returns>Returns the generated SAS token string.</returns>
+        public static string BuildSharedAccessSignature(string resource, DateTimeOffset expirationUtc, AzureKeyCredential key)
         {
             const char Resource = 'r';
             const char Expiration = 'e';
             const char Signature = 's';
 
-            if (_key == null)
-            {
-                throw new NotSupportedException("Can only create a SAS token when using an EventGridClient created using AzureKeyCredential.");
-            }
-
-            var uriBuilder = new RequestUriBuilder();
-            uriBuilder.Reset(_endpoint);
-            uriBuilder.AppendQuery("api-version", _apiVersion, true);
-            string encodedResource = HttpUtility.UrlEncode(_endpoint.ToString());
+            string encodedResource = HttpUtility.UrlEncode(resource);
             var culture = CultureInfo.CreateSpecificCulture("en-US");
             var encodedExpirationUtc = HttpUtility.UrlEncode(expirationUtc.ToString(culture));
 
             string unsignedSas = $"{Resource}={encodedResource}&{Expiration}={encodedExpirationUtc}";
-            using (var hmac = new HMACSHA256(Convert.FromBase64String(_key.Key)))
+            using (var hmac = new HMACSHA256(Convert.FromBase64String(key.Key)))
             {
                 string signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(unsignedSas)));
                 string encodedSignature = HttpUtility.UrlEncode(signature);

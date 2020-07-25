@@ -23,6 +23,15 @@ namespace Azure.Messaging.EventGrid
         /// <summary>
         /// SAS token used to authenticate to the Event Grid service.
         /// </summary>
-        public string Signature { get; }
+        public string Signature { get; private set; }
+
+        /// <summary>
+        /// Updates the SAS token. This is intended to be used when you've regenerated the token and want to update long lived clients.
+        /// </summary>
+        /// <param name="signature">SAS token used for authentication</param>
+        public void Update(string signature)
+        {
+            Signature = signature;
+        }
     }
 }

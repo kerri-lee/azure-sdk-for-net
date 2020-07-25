@@ -94,7 +94,7 @@ namespace Azure.Messaging.EventGrid.Models
         public string Datacontenttype { get; set; }
         /// <summary> This describes the subject of the event in the context of the event producer (identified by source). </summary>
         public string Subject { get; set; }
-        internal IDictionary<string, object> AdditionalProperties { get; }
+        internal IDictionary<string, object> AdditionalProperties { get; set; } = new Dictionary<string, object>();
         /// <inheritdoc />
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator() => AdditionalProperties.GetEnumerator();
         /// <inheritdoc />
