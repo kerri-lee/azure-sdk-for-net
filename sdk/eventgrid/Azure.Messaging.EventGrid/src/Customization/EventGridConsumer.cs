@@ -18,26 +18,12 @@ namespace Azure.Messaging.EventGrid
     /// <summary>
     /// Class used to decode events from the Event Grid service.
     /// </summary>
-    public class EventGridConsumer
+    public static class EventGridConsumer
     {
-        /// <summary>
-        /// Serializer used to decode events and custom payloads from JSON
-        /// </summary>
-        private ObjectSerializer _objectSerializer = new JsonObjectSerializer(new JsonSerializerOptions()
+        private static ObjectSerializer _objectSerializer = new JsonObjectSerializer(new JsonSerializerOptions()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
-
-        // Initialize some sort of dictionary for custom event types
-        //private readonly ConcurrentDictionary<string, Type> _customEventTypeMappings = new ConcurrentDictionary<string, Type>();
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EventGridConsumer"/> class.
-        /// </summary>
-        public EventGridConsumer()
-        {
-
-        }
 
         /// <summary>
         /// Deserializes JSON encoded events and returns an array of events encoded in the EventGrid event schema.
@@ -47,7 +33,7 @@ namespace Azure.Messaging.EventGrid
         /// </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of EventGrid Events.</returns>
-        public virtual EventGridEvent[] DeserializeEventGridEvents(string requestContent, CancellationToken cancellationToken = default)
+        public static EventGridEvent[] DeserializeEventGridEvents(string requestContent, CancellationToken cancellationToken = default)
         {
             // need to check if events are actually encoded in the eg schema
             MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
@@ -84,7 +70,7 @@ namespace Azure.Messaging.EventGrid
         /// </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of CloudEvents.</returns>
-        public virtual CloudEvent[] DeserializeCloudEvents(string requestContent, CancellationToken cancellationToken = default)
+        public static CloudEvent[] DeserializeCloudEvents(string requestContent, CancellationToken cancellationToken = default)
         {
             // need to check if events are actually encoded in the cloudevent schema
 
@@ -134,7 +120,7 @@ namespace Azure.Messaging.EventGrid
         /// </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
         /// <returns>A list of CloudEvents.</returns>
-        public virtual T[] DeserializeCustomEvents<T>(string requestContent, CancellationToken cancellationToken = default)
+        public static T[] DeserializeCustomEvents<T>(string requestContent, CancellationToken cancellationToken = default)
         {
             MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(requestContent));
             return (T[])_objectSerializer.Deserialize(stream, typeof(T[]), cancellationToken);
