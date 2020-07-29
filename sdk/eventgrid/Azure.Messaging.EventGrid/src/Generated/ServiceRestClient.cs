@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
@@ -39,7 +40,7 @@ namespace Azure.Messaging.EventGrid
             _pipeline = pipeline;
         }
 
-        internal HttpMessage CreatePublishEventsRequest(string topicHostname, IEnumerable<EventGridEvent> events)
+        internal HttpMessage CreatePublishEventsRequest(string topicHostname, IEnumerable<EventGridEventInternal> events)
         {
             var message = _pipeline.CreateMessage();
             var request = message.Request;
@@ -66,8 +67,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        /// <exception cref="ArgumentNullException"> <paramref name="topicHostname"/> or <paramref name="events"/> is null. </exception>
-        public async Task<Response> PublishEventsAsync(string topicHostname, IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
+        public async Task<Response> PublishEventsAsync(string topicHostname, IEnumerable<EventGridEventInternal> events, CancellationToken cancellationToken = default)
         {
             if (topicHostname == null)
             {
@@ -93,8 +93,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        /// <exception cref="ArgumentNullException"> <paramref name="topicHostname"/> or <paramref name="events"/> is null. </exception>
-        public Response PublishEvents(string topicHostname, IEnumerable<EventGridEvent> events, CancellationToken cancellationToken = default)
+        public Response PublishEvents(string topicHostname, IEnumerable<EventGridEventInternal> events, CancellationToken cancellationToken = default)
         {
             if (topicHostname == null)
             {
@@ -116,7 +115,7 @@ namespace Azure.Messaging.EventGrid
             }
         }
 
-        internal HttpMessage CreatePublishCloudEventEventsRequest(string topicHostname, IEnumerable<CloudEvent> events)
+        internal HttpMessage CreatePublishCloudEventEventsRequest(string topicHostname, IEnumerable<CloudEventInternal> events)
         {
             var message = _pipeline.CreateMessage();
             var request = message.Request;
@@ -143,8 +142,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        /// <exception cref="ArgumentNullException"> <paramref name="topicHostname"/> or <paramref name="events"/> is null. </exception>
-        public async Task<Response> PublishCloudEventEventsAsync(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+        public async Task<Response> PublishCloudEventEventsAsync(string topicHostname, IEnumerable<CloudEventInternal> events, CancellationToken cancellationToken = default)
         {
             if (topicHostname == null)
             {
@@ -170,8 +168,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
         /// <param name="events"> An array of events to be published to Event Grid. </param>
         /// <param name="cancellationToken"> The cancellation token to use. </param>
-        /// <exception cref="ArgumentNullException"> <paramref name="topicHostname"/> or <paramref name="events"/> is null. </exception>
-        public Response PublishCloudEventEvents(string topicHostname, IEnumerable<CloudEvent> events, CancellationToken cancellationToken = default)
+        public Response PublishCloudEventEvents(string topicHostname, IEnumerable<CloudEventInternal> events, CancellationToken cancellationToken = default)
         {
             if (topicHostname == null)
             {
@@ -265,6 +262,1046 @@ namespace Azure.Messaging.EventGrid
             {
                 case 200:
                     return message.Response;
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateStorageBlobCreatedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<StorageBlobCreatedEventData>> StorageBlobCreatedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageBlobCreatedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageBlobCreatedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = StorageBlobCreatedEventData.DeserializeStorageBlobCreatedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<StorageBlobCreatedEventData> StorageBlobCreatedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageBlobCreatedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageBlobCreatedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = StorageBlobCreatedEventData.DeserializeStorageBlobCreatedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateStorageBlobDeletedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events1", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<StorageBlobDeletedEventData>> StorageBlobDeletedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageBlobDeletedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageBlobDeletedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = StorageBlobDeletedEventData.DeserializeStorageBlobDeletedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<StorageBlobDeletedEventData> StorageBlobDeletedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageBlobDeletedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageBlobDeletedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = StorageBlobDeletedEventData.DeserializeStorageBlobDeletedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateStorageDirectoryCreatedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events2", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<StorageDirectoryCreatedEventData>> StorageDirectoryCreatedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageDirectoryCreatedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageDirectoryCreatedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = StorageDirectoryCreatedEventData.DeserializeStorageDirectoryCreatedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<StorageDirectoryCreatedEventData> StorageDirectoryCreatedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageDirectoryCreatedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageDirectoryCreatedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = StorageDirectoryCreatedEventData.DeserializeStorageDirectoryCreatedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateStorageDirectoryDeletedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events3", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<StorageDirectoryDeletedEventData>> StorageDirectoryDeletedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageDirectoryDeletedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageDirectoryDeletedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = StorageDirectoryDeletedEventData.DeserializeStorageDirectoryDeletedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<StorageDirectoryDeletedEventData> StorageDirectoryDeletedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageDirectoryDeletedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageDirectoryDeletedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = StorageDirectoryDeletedEventData.DeserializeStorageDirectoryDeletedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateStorageBlobRenamedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events4", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<StorageBlobRenamedEventData>> StorageBlobRenamedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageBlobRenamedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageBlobRenamedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = StorageBlobRenamedEventData.DeserializeStorageBlobRenamedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<StorageBlobRenamedEventData> StorageBlobRenamedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageBlobRenamedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageBlobRenamedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = StorageBlobRenamedEventData.DeserializeStorageBlobRenamedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateStorageDirectoryRenamedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events5", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<StorageDirectoryRenamedEventData>> StorageDirectoryRenamedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageDirectoryRenamedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageDirectoryRenamedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = StorageDirectoryRenamedEventData.DeserializeStorageDirectoryRenamedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<StorageDirectoryRenamedEventData> StorageDirectoryRenamedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateStorageDirectoryRenamedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        StorageDirectoryRenamedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = StorageDirectoryRenamedEventData.DeserializeStorageDirectoryRenamedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateEventHubCaptureFileCreatedTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<EventHubCaptureFileCreatedEventData>> EventHubCaptureFileCreatedTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateEventHubCaptureFileCreatedTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        EventHubCaptureFileCreatedEventData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = EventHubCaptureFileCreatedEventData.DeserializeEventHubCaptureFileCreatedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<EventHubCaptureFileCreatedEventData> EventHubCaptureFileCreatedTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateEventHubCaptureFileCreatedTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        EventHubCaptureFileCreatedEventData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = EventHubCaptureFileCreatedEventData.DeserializeEventHubCaptureFileCreatedEventData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceWriteSuccessDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceWriteSuccessData>> ResourceWriteSuccessDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceWriteSuccessDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceWriteSuccessData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceWriteSuccessData.DeserializeResourceWriteSuccessData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceWriteSuccessData> ResourceWriteSuccessDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceWriteSuccessDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceWriteSuccessData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceWriteSuccessData.DeserializeResourceWriteSuccessData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceWriteFailureDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events1", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceWriteFailureData>> ResourceWriteFailureDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceWriteFailureDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceWriteFailureData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceWriteFailureData.DeserializeResourceWriteFailureData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceWriteFailureData> ResourceWriteFailureDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceWriteFailureDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceWriteFailureData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceWriteFailureData.DeserializeResourceWriteFailureData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceWriteCancelDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events2", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceWriteCancelData>> ResourceWriteCancelDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceWriteCancelDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceWriteCancelData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceWriteCancelData.DeserializeResourceWriteCancelData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceWriteCancelData> ResourceWriteCancelDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceWriteCancelDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceWriteCancelData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceWriteCancelData.DeserializeResourceWriteCancelData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceDeleteSuccessDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events3", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceDeleteSuccessData>> ResourceDeleteSuccessDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceDeleteSuccessDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceDeleteSuccessData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceDeleteSuccessData.DeserializeResourceDeleteSuccessData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceDeleteSuccessData> ResourceDeleteSuccessDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceDeleteSuccessDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceDeleteSuccessData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceDeleteSuccessData.DeserializeResourceDeleteSuccessData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceDeleteFailureDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events4", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceDeleteFailureData>> ResourceDeleteFailureDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceDeleteFailureDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceDeleteFailureData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceDeleteFailureData.DeserializeResourceDeleteFailureData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceDeleteFailureData> ResourceDeleteFailureDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceDeleteFailureDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceDeleteFailureData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceDeleteFailureData.DeserializeResourceDeleteFailureData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceDeleteCancelDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events5", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceDeleteCancelData>> ResourceDeleteCancelDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceDeleteCancelDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceDeleteCancelData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceDeleteCancelData.DeserializeResourceDeleteCancelData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceDeleteCancelData> ResourceDeleteCancelDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceDeleteCancelDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceDeleteCancelData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceDeleteCancelData.DeserializeResourceDeleteCancelData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceActionSuccessDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events6", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceActionSuccessData>> ResourceActionSuccessDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceActionSuccessDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceActionSuccessData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceActionSuccessData.DeserializeResourceActionSuccessData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceActionSuccessData> ResourceActionSuccessDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceActionSuccessDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceActionSuccessData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceActionSuccessData.DeserializeResourceActionSuccessData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceActionFailureDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events7", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceActionFailureData>> ResourceActionFailureDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceActionFailureDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceActionFailureData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceActionFailureData.DeserializeResourceActionFailureData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceActionFailureData> ResourceActionFailureDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceActionFailureDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceActionFailureData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceActionFailureData.DeserializeResourceActionFailureData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw _clientDiagnostics.CreateRequestFailedException(message.Response);
+            }
+        }
+
+        internal HttpMessage CreateResourceActionCancelDataTestRequest(string topicHostname)
+        {
+            var message = _pipeline.CreateMessage();
+            var request = message.Request;
+            request.Method = RequestMethod.Post;
+            var uri = new RawRequestUriBuilder();
+            uri.AppendRaw("https://", false);
+            uri.AppendRaw(topicHostname, false);
+            uri.AppendPath("/api/events8", false);
+            request.Uri = uri;
+            return message;
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public async Task<Response<ResourceActionCancelData>> ResourceActionCancelDataTestAsync(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceActionCancelDataTestRequest(topicHostname);
+            await _pipeline.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceActionCancelData value = default;
+                        using var document = await JsonDocument.ParseAsync(message.Response.ContentStream, default, cancellationToken).ConfigureAwait(false);
+                        value = ResourceActionCancelData.DeserializeResourceActionCancelData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
+                default:
+                    throw await _clientDiagnostics.CreateRequestFailedExceptionAsync(message.Response).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary> Test method to generate a deserialization method. </summary>
+        /// <param name="topicHostname"> The host name of the topic, e.g. topic1.westus2-1.eventgrid.azure.net. </param>
+        /// <param name="cancellationToken"> The cancellation token to use. </param>
+        public Response<ResourceActionCancelData> ResourceActionCancelDataTest(string topicHostname, CancellationToken cancellationToken = default)
+        {
+            if (topicHostname == null)
+            {
+                throw new ArgumentNullException(nameof(topicHostname));
+            }
+
+            using var message = CreateResourceActionCancelDataTestRequest(topicHostname);
+            _pipeline.Send(message, cancellationToken);
+            switch (message.Response.Status)
+            {
+                case 200:
+                    {
+                        ResourceActionCancelData value = default;
+                        using var document = JsonDocument.Parse(message.Response.ContentStream);
+                        value = ResourceActionCancelData.DeserializeResourceActionCancelData(document.RootElement);
+                        return Response.FromValue(value, message.Response);
+                    }
                 default:
                     throw _clientDiagnostics.CreateRequestFailedException(message.Response);
             }
