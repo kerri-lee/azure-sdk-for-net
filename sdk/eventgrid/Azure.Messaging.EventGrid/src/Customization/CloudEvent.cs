@@ -71,9 +71,9 @@ namespace Azure.Messaging.EventGrid.Models
         /// <summary> Type of event related to the originating occurrence. </summary>
         public string Type { get; set; }
         /// <summary> The time (in UTC) the event was generated, in RFC3339 format. </summary>
-        public DateTimeOffset? Time { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset? Time { get; set; }
         /// <summary> The version of the CloudEvents specification which the event uses. </summary>
-        public string SpecVersion { get; set; } = "1.0";
+        public string SpecVersion { get; internal set; } = "1.0";
         /// <summary> Identifies the schema that data adheres to. </summary>
         public string DataSchema { get; set; }
         /// <summary> Content type of data value. </summary>
