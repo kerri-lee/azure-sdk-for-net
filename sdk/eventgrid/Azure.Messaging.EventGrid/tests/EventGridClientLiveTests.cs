@@ -26,9 +26,9 @@ namespace Azure.Messaging.EventGrid.Tests
         [Test]
         public async Task CanPublishEvent()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.TopicHost),
                     new AzureKeyCredential(TestEnvironment.TopicKey),
                     options));
@@ -38,9 +38,9 @@ namespace Azure.Messaging.EventGrid.Tests
         [Test]
         public async Task CanPublishEventWithCustomObjectPayload()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.TopicHost),
                     new AzureKeyCredential(TestEnvironment.TopicKey),
                     options));
@@ -50,9 +50,9 @@ namespace Azure.Messaging.EventGrid.Tests
         [Test]
         public async Task CanPublishEventToDomain()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.DomainHost),
                     new AzureKeyCredential(TestEnvironment.DomainKey),
                     options));
@@ -62,9 +62,9 @@ namespace Azure.Messaging.EventGrid.Tests
         [Test]
         public async Task CanPublishCloudEvent()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CloudEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
                     options));
@@ -72,11 +72,35 @@ namespace Azure.Messaging.EventGrid.Tests
         }
 
         [Test]
+        public async Task CanPublishCloudEventWithBinaryData()
+        {
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
+                    new Uri(TestEnvironment.CloudEventTopicHost),
+                    new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
+                    options));
+            await client.PublishCloudEventsAsync(GetCloudEventsListWithBinaryData());
+        }
+
+        [Test]
+        public async Task CanPublishCloudEventWithRawJsonData()
+        {
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
+                    new Uri(TestEnvironment.CloudEventTopicHost),
+                    new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
+                    options));
+            await client.PublishCloudEventsAsync(GetCloudEventsListWithRawJsonData());
+        }
+
+        [Test]
         public async Task CanPublishCloudEventWithCustomObjectPayload()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CloudEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CloudEventTopicKey),
                     options));
@@ -86,9 +110,9 @@ namespace Azure.Messaging.EventGrid.Tests
         [Test]
         public async Task CanPublishCustomEvent()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CustomEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
                     options));
@@ -98,32 +122,32 @@ namespace Azure.Messaging.EventGrid.Tests
         [Test]
         public async Task CanPublishEventUsingSAS()
         {
-            EventGridClient client = new EventGridClient(
-                new Uri(TestEnvironment.TopicHost),
+            string resource = TestEnvironment.TopicHost + "?api-version=2018-01-01";
+            string sasToken = EventGridPublisherClient.BuildSharedAccessSignature(
+                resource,
+                DateTimeOffset.UtcNow.AddMinutes(60),
                 new AzureKeyCredential(TestEnvironment.TopicKey));
 
-            string sasToken = client.BuildSharedAccessSignature(DateTimeOffset.UtcNow.AddMinutes(60));
-
-            EventGridClient sasTokenClient = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient sasTokenClient = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.TopicHost),
-                    new SharedAccessSignatureCredential(sasToken),
-                    Recording.InstrumentClientOptions(new EventGridClientOptions())));
+                    new EventGridSharedAccessSignatureCredential(sasToken),
+                    Recording.InstrumentClientOptions(new EventGridPublisherClientOptions())));
             await sasTokenClient.PublishEventsAsync(GetEventsList());
         }
 
         [Test]
         public async Task CustomizeSerializedJSONPropertiesToCamelCase()
         {
-            EventGridClientOptions options = Recording.InstrumentClientOptions(new EventGridClientOptions());
+            EventGridPublisherClientOptions options = Recording.InstrumentClientOptions(new EventGridPublisherClientOptions());
             options.Serializer = new JsonObjectSerializer(
                 new JsonSerializerOptions()
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
 
-            EventGridClient client = InstrumentClient(
-                new EventGridClient(
+            EventGridPublisherClient client = InstrumentClient(
+                new EventGridPublisherClient(
                     new Uri(TestEnvironment.CustomEventTopicHost),
                     new AzureKeyCredential(TestEnvironment.CustomEventTopicKey),
                     options));
@@ -137,13 +161,15 @@ namespace Azure.Messaging.EventGrid.Tests
             for (int i = 0; i < 10; i++)
             {
                 eventsList.Add(
-                    new EventGridEvent(
-                        Recording.Random.NewGuid().ToString(),
-                        $"Subject-{i}",
-                        "hello",
-                        "Microsoft.MockPublisher.TestEvent",
-                        Recording.Now,
-                        "1.0"));
+                    new EventGridEvent()
+                    {
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Subject = $"Subject-{i}",
+                        Data = "hello",
+                        EventType = "Microsoft.MockPublisher.TestEvent",
+                        EventTime = Recording.Now,
+                        DataVersion = "1.0"
+                    });
             }
 
             return eventsList;
@@ -155,13 +181,15 @@ namespace Azure.Messaging.EventGrid.Tests
             for (int i = 0; i < 10; i++)
             {
                 eventsList.Add(
-                    new EventGridEvent(
-                        Recording.Random.NewGuid().ToString(),
-                        $"Subject-{i}",
-                        new TestPayload("name", i),
-                        "Microsoft.MockPublisher.TestEvent",
-                        Recording.Now,
-                        "1.0"));
+                    new EventGridEvent()
+                    {
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Subject = $"Subject-{i}",
+                        Data = new TestPayload("name", i),
+                        EventType = "Microsoft.MockPublisher.TestEvent",
+                        EventTime = Recording.Now,
+                        DataVersion = "1.0"
+                    });
             }
 
             return eventsList;
@@ -173,13 +201,15 @@ namespace Azure.Messaging.EventGrid.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                EventGridEvent newEGEvent = new EventGridEvent(
-                        Recording.Random.NewGuid().ToString(),
-                        $"Subject-{i}",
-                        "hello",
-                        "Microsoft.MockPublisher.TestEvent",
-                        Recording.Now,
-                        "1.0");
+                EventGridEvent newEGEvent = new EventGridEvent()
+                {
+                    Id = Recording.Random.NewGuid().ToString(),
+                    Subject = $"Subject-{i}",
+                    Data = "hello",
+                    EventType = "Microsoft.MockPublisher.TestEvent",
+                    EventTime = Recording.Now,
+                    DataVersion = "1.0"
+                };
                 newEGEvent.Topic = $"Topic-{i}";
 
                 eventsList.Add(newEGEvent);
@@ -195,11 +225,14 @@ namespace Azure.Messaging.EventGrid.Tests
             for (int i = 0; i < 10; i++)
             {
                 eventsList.Add(
-                    new CloudEvent(
-                        Recording.Random.NewGuid().ToString(),
-                        $"Subject-{i}",
-                        "record",
-                        "1.0"));
+                    new CloudEvent()
+                    {
+                        Id = Recording.Random.NewGuid().ToString(),
+                        Subject = $"Subject-{i}",
+                        Source = "record",
+                        Time = Recording.Now,
+                        Type = "Microsoft.MockPublisher.TestEvent"
+                    });
             }
 
             return eventsList;
@@ -211,12 +244,57 @@ namespace Azure.Messaging.EventGrid.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                CloudEvent cloudEvent = new CloudEvent(
-                    Recording.Random.NewGuid().ToString(),
-                    $"Subject-{i}",
-                    "record",
-                    "1.0");
-                cloudEvent.Data = new TestPayload("name", i);
+                CloudEvent cloudEvent = new CloudEvent()
+                {
+                    Id = Recording.Random.NewGuid().ToString(),
+                    Subject = $"Subject-{i}",
+                    Source = "record",
+                    Time = Recording.Now,
+                    Type = "Microsoft.MockPublisher.TestEvent"
+                };
+            cloudEvent.Data = new TestPayload("name", i);
+                eventsList.Add(cloudEvent);
+            }
+
+            return eventsList;
+        }
+
+        private IList<CloudEvent> GetCloudEventsListWithBinaryData()
+        {
+            List<CloudEvent> eventsList = new List<CloudEvent>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                CloudEvent cloudEvent = new CloudEvent()
+                {
+                    Id = Recording.Random.NewGuid().ToString(),
+                    Subject = $"Subject-{i}",
+                    Source = "record",
+                    Time = Recording.Now,
+                    Type = "Microsoft.MockPublisher.TestEvent"
+                };
+                cloudEvent.Data = Encoding.UTF8.GetBytes("data");
+                eventsList.Add(cloudEvent);
+            }
+
+            return eventsList;
+        }
+
+        private IList<CloudEvent> GetCloudEventsListWithRawJsonData()
+        {
+            List<CloudEvent> eventsList = new List<CloudEvent>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                CloudEvent cloudEvent = new CloudEvent()
+                {
+                    Id = Recording.Random.NewGuid().ToString(),
+                    Subject = $"Subject-{i}",
+                    Source = "record",
+                    Time = Recording.Now,
+                    Type = "Microsoft.MockPublisher.TestEvent"
+                };
+                cloudEvent.Data = "{\"property1\": \"abc\",  \"property2\": \"123\"}";
                 eventsList.Add(cloudEvent);
             }
 
