@@ -43,8 +43,8 @@ namespace Azure.Messaging.EventGrid.Tests
             EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
 
             // Testing update
-            eventgridconsumer2.addorupdatecustomeventmapping("contoso.items.itemreceived", typeof(contosoitemsenteventdata));
-            eventgridconsumer2.addorupdatecustomeventmapping("contoso.items.itemreceived", typeof(contosoitemreceivedeventdata));
+            eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(ContosoItemSentEventData));
+            eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(ContosoItemReceivedEventData));
 
             EventGridEvent[] events = eventGridConsumer2.DeserializeEventGridEvents(requestContent);
 
