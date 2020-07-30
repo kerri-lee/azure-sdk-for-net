@@ -174,6 +174,7 @@ namespace Azure.Messaging.EventGrid.Tests
 
             return eventsList;
         }
+
         private IList<EventGridEvent> GetEventsListWithCustomPayload()
         {
             List<EventGridEvent> eventsList = new List<EventGridEvent>();

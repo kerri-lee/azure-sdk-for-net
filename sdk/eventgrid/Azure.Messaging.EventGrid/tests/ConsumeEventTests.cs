@@ -65,42 +65,49 @@ namespace Azure.Messaging.EventGrid.Tests
             EventGridEvent[] events = eventGridConsumer2.DeserializeEventGridEvents(requestContent);
 
             Assert.NotNull(events);
+
+            //if (events[0].Data is BinaryData)
+            //{
+            //    BinaryData binaryData = (BinaryData)events[0].Data;
+            //    ContosoItemReceivedEventData[] data = binaryData.Deserialize<ContosoItemReceivedEventData[]>();
+            //}
+
             Assert.True(events[0].Data is ContosoItemReceivedEventData[]);
             ContosoItemReceivedEventData[] eventData = (ContosoItemReceivedEventData[])events[0].Data;
             Assert.AreEqual("512d38b6-c7b8-40c8-89fe-f46f9e9622b6", eventData[0].ItemSku);
         }
 
-        //[Test]
-        //public void ConsumeCustomEventWithBooleanData()
-        //{
-        //    string requestContent = "[{  \"id\": \"2d1781af-3a4c-4d7c-bd0c-e34b19da4e66\",  \"topic\": \"/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\",  \"subject\": \"\",  \"data\": true,  \"eventType\": \"Contoso.Items.ItemReceived\",  \"eventTime\": \"2018-01-25T22:12:19.4556811Z\",  \"metadataVersion\": \"1\",  \"dataVersion\": \"1\"}]";
+        [Test]
+        public void ConsumeCustomEventWithBooleanData()
+        {
+            string requestContent = "[{  \"id\": \"2d1781af-3a4c-4d7c-bd0c-e34b19da4e66\",  \"topic\": \"/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\",  \"subject\": \"\",  \"data\": true,  \"eventType\": \"Contoso.Items.ItemReceived\",  \"eventTime\": \"2018-01-25T22:12:19.4556811Z\",  \"metadataVersion\": \"1\",  \"dataVersion\": \"1\"}]";
 
-        //    EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
-        //    eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(bool));
+            EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
+            eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(bool));
 
-        //    EventGridEvent[] events = eventGridConsumer2.DeserializeEventGridEvents(requestContent);
+            EventGridEvent[] events = eventGridConsumer2.DeserializeEventGridEvents(requestContent);
 
-        //    Assert.NotNull(events);
-        //    Assert.True(events[0].Data is bool);
-        //    bool eventData = (bool)events[0].Data;
-        //    Assert.True(eventData);
-        //}
+            Assert.NotNull(events);
+            Assert.True(events[0].Data is bool);
+            bool eventData = (bool)events[0].Data;
+            Assert.True(eventData);
+        }
 
-        //[Test]
-        //public void ConsumeCustomEventWithStringData()
-        //{
-        //    string requestContent = "[{  \"id\": \"2d1781af-3a4c-4d7c-bd0c-e34b19da4e66\",  \"topic\": \"/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\",  \"subject\": \"\",  \"data\": \"stringdata\",  \"eventType\": \"Contoso.Items.ItemReceived\",  \"eventTime\": \"2018-01-25T22:12:19.4556811Z\",  \"metadataVersion\": \"1\",  \"dataVersion\": \"1\"}]";
+        [Test]
+        public void ConsumeCustomEventWithStringData()
+        {
+            string requestContent = "[{  \"id\": \"2d1781af-3a4c-4d7c-bd0c-e34b19da4e66\",  \"topic\": \"/subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\",  \"subject\": \"\",  \"data\": \"stringdata\",  \"eventType\": \"Contoso.Items.ItemReceived\",  \"eventTime\": \"2018-01-25T22:12:19.4556811Z\",  \"metadataVersion\": \"1\",  \"dataVersion\": \"1\"}]";
 
-        //    EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
-        //    eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(string));
+            EventGridConsumer eventGridConsumer2 = new EventGridConsumer();
+            eventGridConsumer2.AddOrUpdateCustomEventMapping("Contoso.Items.ItemReceived", typeof(string));
 
-        //    EventGridEvent[] events = eventGridConsumer2.DeserializeEventGridEvents(requestContent);
+            EventGridEvent[] events = eventGridConsumer2.DeserializeEventGridEvents(requestContent);
 
-        //    Assert.NotNull(events);
-        //    Assert.True(events[0].Data is string);
-        //    string eventData = (string)events[0].Data;
-        //    Assert.AreEqual("stringdata", eventData);
-        //}
+            Assert.NotNull(events);
+            Assert.True(events[0].Data is string);
+            string eventData = (string)events[0].Data;
+            Assert.AreEqual("stringdata", eventData);
+        }
 
         [Test]
         public void ConsumeMultipleCustomEventsInSameBatch()
@@ -113,7 +120,7 @@ namespace Azure.Messaging.EventGrid.Tests
                 "{\"dataVersion\":\"1.0\",\"eventTime\":\"2020-07-09T15:10:21.7694198-07:00\",\"eventType\":\"Microsoft.MockPublisher.TestEvent\",\"id\":\"2090f9a3-76c7-178f-165f-139fbe256155\",\"subject\":\"Subject-3\",\"topic\":\"Topic-3\"}," +
                 "{\"dataVersion\":\"1.0\",\"eventTime\":\"2020-07-09T15:10:21.7694198-07:00\",\"eventType\":\"Microsoft.MockPublisher.TestEvent\",\"id\":\"25518097-d444-2c68-7404-f629ae7bf893\",\"subject\":\"Subject-4\",\"topic\":\"Topic-4\"}]";
 
-            var events = _eventGridConsumer.DeserializeCustomEvents<TestEvent>(requestContent);
+            TestEvent[] events = _eventGridConsumer.DeserializeCustomEvents<TestEvent>(requestContent);
             Assert.NotNull(events);
             Assert.AreEqual(5, events.Length);
             Assert.True(events[0] is TestEvent);
@@ -141,7 +148,7 @@ namespace Azure.Messaging.EventGrid.Tests
             CloudEvent[] events = _eventGridConsumer.DeserializeCloudEvents(requestContent);
             if (events[0].Data is byte[])
             {
-                ReadOnlyMemory<byte> data = (ReadOnlyMemory<byte>)events[0].Data;
+                byte[] data = (byte[])events[0].Data;
             }
         }
 

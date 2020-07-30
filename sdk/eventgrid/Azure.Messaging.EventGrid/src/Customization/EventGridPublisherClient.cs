@@ -198,18 +198,14 @@ namespace Azure.Messaging.EventGrid
                         Subject = cloudEvent.Subject
                     };
 
-                    // The Data/DataBase64 fields are optional for the CloudEvent spec
-                    //if (cloudEvent.DataBase64 != null)
-                    //{
-                    //    newCloudEvent.DataBase64 = Convert.ToBase64String(cloudEvent.DataBase64);
-                    //}
                     if (cloudEvent.Data != null)
                     {
                         if (cloudEvent.Data.GetType() == typeof(byte[]))
                         {
                             newCloudEvent.DataBase64 = Convert.ToBase64String((byte[])cloudEvent.Data);
                         }
-                        else {
+                        else
+                        {
                             newCloudEvent.Data = new EventGridSerializer(
                             cloudEvent.Data,
                             _serializer,
