@@ -80,47 +80,35 @@ namespace Azure.Messaging.EventGrid
                     JsonElement element = (JsonElement)egEvent.Data;
                     MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(egEvent.Data.ToString()));
 
-                    switch (element.ValueKind)
+                    if (element.ValueKind == JsonValueKind.True || element.ValueKind == JsonValueKind.False)
                     {
-                        case JsonValueKind.Undefined:
-                            break;
-                        case JsonValueKind.Object:
-                            egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-                            break;
-                        case JsonValueKind.Array:
-                            egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-                            break;
-                        case JsonValueKind.String:
-                            egEvent.Data = element.GetString();
-                            break;
-                        case JsonValueKind.Number:
-                            var oki = element.TryGetInt32(out var vali);
-                            if (oki)
-                            {
-                                egEvent.Data = vali;
-                            }
-                            var okl = element.TryGetInt64(out var vall);
-                            if (okl)
-                            {
-                                egEvent.Data = vall;
-                            }
-                            var okd = element.TryGetDouble(out var val);
-                            if (okd)
-                            {
-                                egEvent.Data = val;
-                            }
-                            break;
-                        case JsonValueKind.True:
-                            egEvent.Data = element.GetBoolean();
-                            break;
-                        case JsonValueKind.False:
-                            egEvent.Data = element.GetBoolean();
-                            break;
-                        case JsonValueKind.Null:
-                            egEvent.Data = null;
-                            break;
-                        default:
-                            break;
+                        egEvent.Data = element.GetBoolean();
+                    }
+                    else if (element.ValueKind == JsonValueKind.Number)
+                    {
+                        var oki = element.TryGetInt32(out var vali);
+                        if (oki)
+                        {
+                            egEvent.Data = vali;
+                        }
+                        var okl = element.TryGetInt64(out var vall);
+                        if (okl)
+                        {
+                            egEvent.Data = vall;
+                        }
+                        var okd = element.TryGetDouble(out var val);
+                        if (okd)
+                        {
+                            egEvent.Data = val;
+                        }
+                    }
+                    else if (element.ValueKind == JsonValueKind.String)
+                    {
+                        egEvent.Data = element.GetString();
+                    }
+                    else
+                    {
+                        egEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
                     }
                 }
                 else
@@ -175,52 +163,40 @@ namespace Azure.Messaging.EventGrid
                     }
                 }
                 // If not a system event, let's attempt to find the mapping for the event type in the custom event mapping.
-                else if (TryGetCustomEventMapping(cloudEvent.Type, out Type typeOfEventData))
+                else if (TryGetCustomEventMapping(cloudEvent.Type, out Type typeOfEventData) && typeOfEventData != typeof(byte[]))
                 {
                     JsonElement element = (JsonElement)cloudEvent.Data;
                     MemoryStream dataStream = new MemoryStream(Encoding.UTF8.GetBytes(cloudEvent.Data.ToString()));
 
-                    switch (element.ValueKind)
+                    if (element.ValueKind == JsonValueKind.True || element.ValueKind == JsonValueKind.False)
                     {
-                        case JsonValueKind.Undefined:
-                            break;
-                        case JsonValueKind.Object:
-                            cloudEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-                            break;
-                        case JsonValueKind.Array:
-                            cloudEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
-                            break;
-                        case JsonValueKind.String:
-                            cloudEvent.Data = element.GetString();
-                            break;
-                        case JsonValueKind.Number:
-                            var oki = element.TryGetInt32(out var vali);
-                            if (oki)
-                            {
-                                cloudEvent.Data = vali;
-                            }
-                            var okl = element.TryGetInt64(out var vall);
-                            if (okl)
-                            {
-                                cloudEvent.Data = vall;
-                            }
-                            var okd = element.TryGetDouble(out var val);
-                            if (okd)
-                            {
-                                cloudEvent.Data = val;
-                            }
-                            break;
-                        case JsonValueKind.True:
-                            cloudEvent.Data = element.GetBoolean();
-                            break;
-                        case JsonValueKind.False:
-                            cloudEvent.Data = element.GetBoolean();
-                            break;
-                        case JsonValueKind.Null:
-                            cloudEvent.Data = null;
-                            break;
-                        default:
-                            break;
+                        cloudEvent.Data = element.GetBoolean();
+                    }
+                    else if (element.ValueKind == JsonValueKind.Number)
+                    {
+                        var oki = element.TryGetInt32(out var vali);
+                        if (oki)
+                        {
+                            cloudEvent.Data = vali;
+                        }
+                        var okl = element.TryGetInt64(out var vall);
+                        if (okl)
+                        {
+                            cloudEvent.Data = vall;
+                        }
+                        var okd = element.TryGetDouble(out var val);
+                        if (okd)
+                        {
+                            cloudEvent.Data = val;
+                        }
+                    }
+                    else if (element.ValueKind == JsonValueKind.String)
+                    {
+                        cloudEvent.Data = element.GetString();
+                    }
+                    else
+                    {
+                        cloudEvent.Data = ObjectSerializer.Deserialize(dataStream, typeOfEventData, cancellationToken);
                     }
                 }
             }
