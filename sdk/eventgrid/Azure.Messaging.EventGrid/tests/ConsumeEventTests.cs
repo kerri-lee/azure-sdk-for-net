@@ -145,6 +145,7 @@ namespace Azure.Messaging.EventGrid.Tests
         {
             string requestContent = "[{\"id\":\"994bc3f8-c90c-6fc3-9e83-6783db2221d5\",\"source\":\"Subject-0\",  \"data_base64\": \"ZGF0YQ==\", \"type\":\"BinaryDataType\",\"specversion\":\"1.0\"}]";
 
+            _eventGridConsumer.AddOrUpdateCustomEventMapping("BinaryDataType", typeof(byte[]));
             CloudEvent[] events = _eventGridConsumer.DeserializeCloudEvents(requestContent);
             if (events[0].Data is byte[])
             {
