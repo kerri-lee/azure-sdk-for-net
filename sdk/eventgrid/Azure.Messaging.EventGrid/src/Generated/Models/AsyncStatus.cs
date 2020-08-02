@@ -8,7 +8,7 @@
 using System;
 using System.ComponentModel;
 
-namespace Azure.Messaging.EventGrid.Models
+namespace Azure.Messaging.EventGrid.SystemEvents
 {
     /// <summary> Asynchronous operation status of the operation on the app service plan. </summary>
     public readonly partial struct AsyncStatus : IEquatable<AsyncStatus>
@@ -16,6 +16,7 @@ namespace Azure.Messaging.EventGrid.Models
         private readonly string _value;
 
         /// <summary> Determines if two <see cref="AsyncStatus"/> values are the same. </summary>
+        /// <exception cref="ArgumentNullException"> <paramref name="value"/> is null. </exception>
         public AsyncStatus(string value)
         {
             _value = value ?? throw new ArgumentNullException(nameof(value));

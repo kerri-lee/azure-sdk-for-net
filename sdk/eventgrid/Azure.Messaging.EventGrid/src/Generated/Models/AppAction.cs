@@ -8,7 +8,7 @@
 using System;
 using System.ComponentModel;
 
-namespace Azure.Messaging.EventGrid.Models
+namespace Azure.Messaging.EventGrid.SystemEvents
 {
     /// <summary> Type of action of the operation. </summary>
     public readonly partial struct AppAction : IEquatable<AppAction>
@@ -16,6 +16,7 @@ namespace Azure.Messaging.EventGrid.Models
         private readonly string _value;
 
         /// <summary> Determines if two <see cref="AppAction"/> values are the same. </summary>
+        /// <exception cref="ArgumentNullException"> <paramref name="value"/> is null. </exception>
         public AppAction(string value)
         {
             _value = value ?? throw new ArgumentNullException(nameof(value));

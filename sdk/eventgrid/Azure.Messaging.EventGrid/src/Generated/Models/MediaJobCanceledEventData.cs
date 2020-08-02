@@ -8,7 +8,7 @@
 using System.Collections.Generic;
 using Azure.Core;
 
-namespace Azure.Messaging.EventGrid.Models
+namespace Azure.Messaging.EventGrid.SystemEvents
 {
     /// <summary> Job canceled event data. </summary>
     public partial class MediaJobCanceledEventData : MediaJobStateChangeEventData

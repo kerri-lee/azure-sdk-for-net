@@ -8,7 +8,7 @@
 using System;
 using System.ComponentModel;
 
-namespace Azure.Messaging.EventGrid.Models
+namespace Azure.Messaging.EventGrid.SystemEvents
 {
     /// <summary> Kind of environment where app service plan is. </summary>
     public readonly partial struct StampKind : IEquatable<StampKind>
@@ -16,6 +16,7 @@ namespace Azure.Messaging.EventGrid.Models
         private readonly string _value;
 
         /// <summary> Determines if two <see cref="StampKind"/> values are the same. </summary>
+        /// <exception cref="ArgumentNullException"> <paramref name="value"/> is null. </exception>
         public StampKind(string value)
         {
             _value = value ?? throw new ArgumentNullException(nameof(value));
