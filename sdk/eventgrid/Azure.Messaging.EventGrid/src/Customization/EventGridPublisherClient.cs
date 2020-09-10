@@ -48,7 +48,7 @@ namespace Azure.Messaging.EventGrid
         /// <summary>Initalizes an instance of EventGridClient.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
         /// <param name="credential">Credential used to connect to Azure.</param>
-        public EventGridPublisherClient(Uri endpoint, EventGridSharedAccessSignatureCredential credential)
+        public EventGridPublisherClient(Uri endpoint, EventGridSasCredential credential)
             : this(endpoint, credential, new EventGridPublisherClientOptions())
         {
         }
@@ -76,13 +76,13 @@ namespace Azure.Messaging.EventGrid
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
         /// <param name="credential">Credential used to connect to Azure.</param>
         /// <param name="options">Configuring options.</param>
-        public EventGridPublisherClient(Uri endpoint, EventGridSharedAccessSignatureCredential credential, EventGridPublisherClientOptions options)
+        public EventGridPublisherClient(Uri endpoint, EventGridSasCredential credential, EventGridPublisherClientOptions options)
         {
             Argument.AssertNotNull(credential, nameof(credential));
             options ??= new EventGridPublisherClientOptions();
             _dataSerializer = options.DataSerializer ?? new JsonObjectSerializer();
             _endpoint = endpoint;
-            HttpPipeline pipeline = HttpPipelineBuilder.Build(options, new EventGridSharedAccessSignatureCredentialPolicy(credential));
+            HttpPipeline pipeline = HttpPipelineBuilder.Build(options, new EventGridSasCredentialPolicy(credential));
             _serviceRestClient = new ServiceRestClient(new ClientDiagnostics(options), pipeline, options.Version.GetVersionString());
             _clientDiagnostics = new ClientDiagnostics(options);
         }
@@ -327,6 +327,40 @@ namespace Azure.Messaging.EventGrid
 
             string unsignedSas = $"{Resource}={encodedResource}&{Expiration}={encodedExpirationUtc}";
             using (var hmac = new HMACSHA256(Convert.FromBase64String(key.Key)))
+            {
+                string signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(unsignedSas)));
+                string encodedSignature = HttpUtility.UrlEncode(signature);
+                string signedSas = $"{unsignedSas}&{Signature}={encodedSignature}";
+
+                return signedSas;
+            }
+        }
+
+        /// <summary>
+        /// Creates a SAS token for use with Event Grid service.
+        /// </summary>
+        /// <param name="expirationUtc">Time at which the SAS token becomes invalid for authentication.</param>
+        /// <returns>The generated SAS token string.</returns>
+        public string BuildSharedAccessSignature(DateTimeOffset expirationUtc)
+        {
+            const char Resource = 'r';
+            const char Expiration = 'e';
+            const char Signature = 's';
+
+            if (_key == null)
+            {
+                throw new NotSupportedException("Can only create a SAS token when using an EventGridClient created using AzureKeyCredential.");
+            }
+
+            var uriBuilder = new RequestUriBuilder();
+            uriBuilder.Reset(_endpoint);
+            uriBuilder.AppendQuery("api-version", _apiVersion, true);
+            string encodedResource = HttpUtility.UrlEncode(uriBuilder.ToString());
+            var culture = CultureInfo.CreateSpecificCulture("en-US");
+            var encodedExpirationUtc = HttpUtility.UrlEncode(expirationUtc.ToString(culture));
+
+            string unsignedSas = $"{Resource}={encodedResource}&{Expiration}={encodedExpirationUtc}";
+            using (var hmac = new HMACSHA256(Convert.FromBase64String(_key.Key)))
             {
                 string signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(unsignedSas)));
                 string encodedSignature = HttpUtility.UrlEncode(signature);
