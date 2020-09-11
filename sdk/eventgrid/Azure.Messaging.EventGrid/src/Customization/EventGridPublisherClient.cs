@@ -32,12 +32,12 @@ namespace Azure.Messaging.EventGrid
         private readonly string _apiVersion;
         private readonly ObjectSerializer _dataSerializer;
 
-        /// <summary>Initalizes an instance of EventGridClient.</summary>
+        /// <summary>Initalizes an instance of the <see cref="EventGridPublisherClient"/> class.</summary>
         protected EventGridPublisherClient()
         {
         }
 
-        /// <summary>Initalizes an instance of EventGridClient.</summary>
+        /// <summary>Initalizes an instance of the <see cref="EventGridPublisherClient"/> class.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
         /// <param name="credential">Credential used to connect to Azure.</param>
         public EventGridPublisherClient(Uri endpoint, AzureKeyCredential credential)
@@ -45,7 +45,7 @@ namespace Azure.Messaging.EventGrid
         {
         }
 
-        /// <summary>Initalizes an instance of EventGridClient.</summary>
+        /// <summary>Initalizes an instance of the <see cref="EventGridPublisherClient"/> class.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
         /// <param name="credential">Credential used to connect to Azure.</param>
         public EventGridPublisherClient(Uri endpoint, EventGridSasCredential credential)
@@ -53,7 +53,7 @@ namespace Azure.Messaging.EventGrid
         {
         }
 
-        /// <summary>Initalizes an instance of the<see cref="EventGridPublisherClient"/> class.</summary>
+        /// <summary>Initalizes an instance of the <see cref="EventGridPublisherClient"/> class.</summary>
         /// <param name="endpoint">Topic endpoint. For example, "https://TOPIC-NAME.REGION-NAME-1.eventgrid.azure.net/api/events".</param>
         /// <param name="credential">Credential used to connect to Azure.</param>
         /// <param name="options">Configuring options.</param>
@@ -312,7 +312,7 @@ namespace Azure.Messaging.EventGrid
         /// <param name="key">Key credential used to generate the token.</param>
         /// <param name="apiVersion">Service version to use when handling requests made with the SAS token.</param>
         /// <returns>The generated SAS token string.</returns>
-        public static string BuildSharedAccessSignature(Uri endpoint, DateTimeOffset expirationUtc, AzureKeyCredential key, EventGridPublisherClientOptions.ServiceVersion apiVersion = EventGridPublisherClientOptions.LatestVersion)
+        public static string GenerateSAS(Uri endpoint, DateTimeOffset expirationUtc, AzureKeyCredential key, EventGridPublisherClientOptions.ServiceVersion apiVersion = EventGridPublisherClientOptions.LatestVersion)
         {
             const char Resource = 'r';
             const char Expiration = 'e';
@@ -341,7 +341,7 @@ namespace Azure.Messaging.EventGrid
         /// </summary>
         /// <param name="expirationUtc">Time at which the SAS token becomes invalid for authentication.</param>
         /// <returns>The generated SAS token string.</returns>
-        public string BuildSharedAccessSignature(DateTimeOffset expirationUtc)
+        public string GenerateSAS(DateTimeOffset expirationUtc)
         {
             const char Resource = 'r';
             const char Expiration = 'e';
